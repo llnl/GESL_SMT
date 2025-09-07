@@ -11,6 +11,11 @@ import seaborn as sns
 import matplotlib.gridspec as gridspec
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
+import plotly.graph_objects as go
+import dash
+from dash import dash_table, dcc, html
+from dash.dependencies import Input, Output
+import webbrowser
 
 # Classification
 from sklearn.model_selection import train_test_split
@@ -23,7 +28,10 @@ import pickle
 # Data formats
 import json
 
-#Disable Pandas Warnings for Future
+# User defined functions
+import Functions as fn
+
+# Disable Pandas Warnings for Future
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -266,12 +274,52 @@ def vis_result(pri_label, sec_res, tert_res):
               ordered_labels, 
               loc="upper left", 
               bbox_to_anchor = (1, 0, 0.5, 1))   
-
     ax.set(aspect="equal")
     plt.title('Likelihood for the Primary Label: ' + pri_label, 
               fontweight='bold', 
               fontsize=20) 
-    fig.show()
+    return ordered_labels
+
+def vis_table(df_labels):
+    primary_labels = ['Events', 'State', 'Equipment', 'Conditions', 'Phase']
+    app = dash.Dash(__name__)
+
+    app.layout = html.Div([
+        html.Label("Select a primary label:"),
+        dcc.RadioItems(
+            id="primary-radio",
+            options=[{"label": label, "value": label} for label in primary_labels],
+            value=primary_labels[0],
+            inline=True  # display horizontally
+        ),
+        dash_table.DataTable(
+            id="table",
+            columns=[{"name": i, "id": i} for i in df_labels.columns],
+            data=df_labels.to_dict("records"),
+            style_cell={'textAlign': 'left'}
+        )
+    ])
+
+    # highlight the selected column
+    @app.callback(
+        Output("table", "style_data_conditional"),
+        Input("primary-radio", "value")
+    )
+    def highlight_column(selected):
+        return [
+            {
+                'if': {'column_id': selected},
+                'backgroundColor': "#8CD812"
+            }
+        ]
+    # Open browser automatically
+    webbrowser.open("http://127.0.0.1:8050/")
+    app.run(debug=False)
+
+def format_cell(val):
+    if isinstance(val, str) and not val.strip().startswith("--"):
+        return f"<b>{val.strip()}</b>"
+    return val.strip()
 
 def vis_importance(data, pri_label):
     """
@@ -368,6 +416,8 @@ def create_input_dataframe(raw_data):
 
     return df  # Return processed DataFrame
 
+
+
 def main():
     """
     Main function that runs the signature-matching process and renders results.
@@ -386,8 +436,7 @@ def main():
 
     # Transform the raw input table into a dataframe where each row corresponds to one PMU instance
     df_all_pmu = create_input_dataframe(df_input)
-
-    # Iterate over each PMU instance (row) in the prepared dataframe
+    vis_table_labels = []
     for ind, row in df_all_pmu.iterrows():
         # Convert the Series 'row' back to a 1-row DataFrame for downstream functions that expect DataFrame input
         df = pd.DataFrame(row).T
@@ -396,44 +445,35 @@ def main():
         for pri_label in group_labels:
             # Run model/validator: returns predicted class, predicted subclass, and optional importance scores
             pred_class, pred_subclass, importance_scores = validation(df, pri_label)
-
-            # Visualize the classification result for this primary label
-            vis_result(pri_label, pred_class, pred_subclass)
-
-            # If you want to visualize feature importances, uncomment the line below
-            # vis_importance(importance_scores, pri_label)
-
-    # Render any accumulated matplotlib figures to the screen
+            chart_labels = vis_result(pri_label,pred_class,pred_subclass)
+            vis_table_labels.append(chart_labels)
+            # vis_importance(importance_scores,pri_label)
+    df_vis_table = pd.DataFrame.from_records(vis_table_labels).T
+    df_vis_table.columns = [f"Column_{i+1}" for i in range(len(df_vis_table.columns))]
+    df_vis_table.columns = group_labels
+    vis_table(df_vis_table)
     plt.show()
 
 
 if __name__ == "__main__":
 
-    # Load PMU waveform data (CSV from GESL). Example: Inputs/sigId-978.csv
-    df_input = pd.read_csv('Inputs/sigId-980.csv')
-
-    # Metadata describing the input format
-    data_type = 'PMU'      # Not used below, but helpful for context/branching in larger scripts
-    nFeatures = 6          # Each PMU entry is expected to have exactly 6 feature columns
-
-    # Derive the number of PMUs from column count:
-    #   - Assume first column is time/index or label → subtract 1
-    #   - Divide by number of features per PMU
+    # Provide PMU waveform data (in .csv format) from GESL (Provider 9-10), e.g., sigID-978.csv
+    df_input = pd.read_csv('Inputs/sigId-978.csv')
+    data_type = 'PMU'
+    nFeatures = 6
     nPMU = ((df_input.shape[1]) - 1) / nFeatures
-
-    # Sanity check: ensure we have a whole number of PMUs
     if nPMU % 1 != 0:
         print('ERROR: Please check the number of features in the PMU data. '
               'Each PMU should have exactly SIX features in the columns.')
         exit(1)
     else:
         print('The input data contains a total of {} PMU entries.'.format(int(nPMU)))
-
-    # Load label-mapping dictionaries used for hierarchical classification:
-    #   (1) primary → secondary labels
-    #   (2) secondary → tertiary labels
+    
+    # Input a dictionary to map:
+    #   (1) primary labels to secondary labels and 
+    #   (2) secondary labels to tertiary labels, 
+    # to be used during hierarchical classification.
     pri_to_sec_dict = json.load(open('Inputs/pri_to_sec_dict_transmission.json'))
     sec_to_tert_dict = json.load(open('Inputs/sec_to_tert_dict_transmission.json'))
 
-    # Kick off the pipeline
     main()
