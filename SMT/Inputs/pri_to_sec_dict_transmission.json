@@ -1,0 +1,38 @@
+{
+    "Events": [
+        "Equipment-Failure",
+        "Fault",
+        "External",
+        "System-Event-Condition",
+        "Construction-&-Maintenance",
+        "Protection-Event",
+        "Switching-Event",
+        "Other",
+        "Vegetation",
+        "Wildlife",
+        "Defect-or-Deterioration"
+    ],
+    "State": [
+        "Change-State",
+        "Steady-State"
+    ],
+    "Conditions": [
+        "Weather",
+        "Natural-disaster"
+    ],
+    "Equipment": [
+        "Substation",
+        "Overhead-Equipment",
+        "Interrupting-Device",
+        "Sources",
+        "Transformer",
+        "Devices"
+    ],
+    "Phase": [
+        "Two-phase",
+        "Single-phase-ground",
+        "Three-phase",
+        "Single-phase",
+        "Two-phase-ground"
+    ]       
+}
