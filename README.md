@@ -7,7 +7,7 @@ This repository contains a **Signature Matching Tool (SMT)** designed to process
 
 ---
 ## Updates (Differences from Main Branch)
-- Develop an interactive table visualization
+- Includes an interactive table visualization for web interface integration
 
 ## Features
 
