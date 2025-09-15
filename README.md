@@ -6,8 +6,6 @@ This repository contains a **Signature Matching Tool (SMT)** designed to process
 - **Prediction & Visualization** (`get_prediction.py`) – Loads trained models and uses them to classify new PMU signatures, outputting nested pie charts and feature importance visualizations.
 
 ---
-## Updates (Differences from Main Branch)
-- Includes an interactive table visualization for web interface integration
 
 ## Features
 
