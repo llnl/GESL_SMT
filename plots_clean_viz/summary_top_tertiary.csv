@@ -1,0 +1,6 @@
+Primary,Top tertiary,Adj_prob
+Conditions,Weather :: Lightning-Storm,0.459
+Equipment,Substation :: Transmission,1.0
+Events,Equipment-Failure :: Nonspecific-Equipment-Failure,1.0
+Phase,Two-phase-ground :: Nonspecific-Two-phase-ground,0.617
+State,Change-State :: Trip,1.0

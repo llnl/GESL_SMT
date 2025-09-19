@@ -16,7 +16,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 2528,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
 1045,Events,External,System-Event-Condition,Lightning-Strike,Frequency-Deviation
 2318,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
-2404,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
+2404,Events,System-Event-Condition,External,Frequency-Deviation,Lightning-Strike
 2458,Events,External,External,Lightning-Strike,Lightning-Strike
 2440,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 2440,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
@@ -79,7 +79,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 1045,Events,External,External,Lightning-Strike,Lightning-Strike
 2449,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 1503,Events,Other,External,Fire,Lightning-Strike
-2635,Events,Vegetation,Vegetation,Tree,Tree
+2635,Events,Vegetation,External,Tree,Lightning-Strike
 1203,Events,Equipment-Failure,External,Nonspecific-Equipment-Failure,Lightning-Strike
 2276,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
 2175,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
@@ -118,7 +118,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 2032,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
 2181,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 1044,Events,External,External,Lightning-Strike,Lightning-Strike
-1876,Events,Fault,External,Nonspecific-Fault,Lightning-Strike
+1876,Events,Fault,System-Event-Condition,Nonspecific-Fault,Frequency-Deviation
 1722,Events,Equipment-Failure,Equipment-Failure,Nonspecific-Equipment-Failure,Nonspecific-Equipment-Failure
 2402,Events,External,System-Event-Condition,Lightning-Strike,Frequency-Deviation
 1363,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
@@ -126,7 +126,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 2159,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 1150,Events,Fault,Fault,Nonspecific-Fault,Nonspecific-Fault
 2213,Events,System-Event-Condition,System-Event-Condition,Oscillation,Frequency-Deviation
-1349,Events,Construction-&-Maintenance,System-Event-Condition,Accident,Frequency-Deviation
+1349,Events,Construction-&-Maintenance,External,Accident,Lightning-Strike
 1056,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
 2449,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 2052,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
@@ -167,7 +167,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 1746,Events,External,External,Lightning-Strike,Lightning-Strike
 2276,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
 2098,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
-2382,Events,External,External,Lightning-Strike,Lightning-Strike
+2382,Events,External,Switching-Event,Lightning-Strike,Nonspecific-Switching-Event
 2082,Events,Construction-&-Maintenance,Construction-&-Maintenance,Maintenance,Maintenance
 2098,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 2394,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
@@ -267,7 +267,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 2306,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 2221,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
 1965,Events,Equipment-Failure,Equipment-Failure,Nonspecific-Equipment-Failure,Nonspecific-Equipment-Failure
-1829,Events,External,Equipment-Failure,Lightning-Strike,Nonspecific-Equipment-Failure
+1829,Events,External,External,Lightning-Strike,Lightning-Strike
 1328,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
 2387,Events,Construction-&-Maintenance,System-Event-Condition,Maintenance,Frequency-Deviation
 1655,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
@@ -305,7 +305,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 1332,Events,External,External,Lightning-Strike,Lightning-Strike
 2413,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
 2031,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
-1503,Events,Other,Other,Fire,Fire
+1503,Events,Other,External,Fire,Lightning-Strike
 2036,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 1658,Events,Equipment-Failure,Equipment-Failure,Nonspecific-Equipment-Failure,Nonspecific-Equipment-Failure
 2501,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
@@ -333,7 +333,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 2573,Events,External,System-Event-Condition,Lightning-Strike,Frequency-Deviation
 2019,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 1045,Events,External,External,Lightning-Strike,Lightning-Strike
-1071,Events,Switching-Event,External,Nonspecific-Switching-Event,Lightning-Strike
+1071,Events,Switching-Event,System-Event-Condition,Nonspecific-Switching-Event,Frequency-Deviation
 2366,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 2463,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 1132,Events,Fault,System-Event-Condition,Nonspecific-Fault,Frequency-Deviation
@@ -347,7 +347,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 2368,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 2340,Events,Fault,System-Event-Condition,Nonspecific-Fault,Frequency-Deviation
 2152,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
-1640,Events,Equipment-Failure,Equipment-Failure,Nonspecific-Equipment-Failure,Nonspecific-Equipment-Failure
+1640,Events,Equipment-Failure,External,Nonspecific-Equipment-Failure,Nonspecific-External
 2610,Events,System-Event-Condition,System-Event-Condition,Frequency-Deviation,Frequency-Deviation
 1328,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
 1058,Events,System-Event-Condition,System-Event-Condition,Oscillation,Oscillation
@@ -1190,7 +1190,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 1688,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
 2298,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
 2573,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
-1009,Equipment,Sources,Sources,Generator,Generator
+1009,Equipment,Sources,Overhead-Equipment,Generator,Conductor
 2580,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
 1348,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
 2308,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
@@ -1245,7 +1245,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 2630,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
 1150,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
 1649,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
-1339,Equipment,Sources,Sources,Generator,Generator
+1339,Equipment,Sources,Overhead-Equipment,Generator,Conductor
 2113,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
 1605,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
 1697,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
@@ -1266,7 +1266,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 1638,Equipment,Substation,Overhead-Equipment,Transmission,Conductor
 1853,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
 2523,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
-1339,Equipment,Sources,Sources,Generator,Generator
+1339,Equipment,Sources,Overhead-Equipment,Generator,Conductor
 2664,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
 2389,Equipment,Overhead-Equipment,Overhead-Equipment,Conductor,Conductor
 2066,Conditions,Weather,Weather,Lightning-Storm,Lightning-Storm
@@ -1275,7 +1275,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 1125,Conditions,Weather,Weather,Nonspecific-Weather,Nonspecific-Weather
 1082,Conditions,Weather,Weather,Ice,Ice
 2595,Conditions,Weather,Weather,Lightning-Storm,Lightning-Storm
-1096,Conditions,Weather,Weather,Lightning-Storm,Lightning-Storm
+1096,Conditions,Weather,Weather,Lightning-Storm,Nonspecific-Weather
 1911,Conditions,Weather,Weather,Lightning-Storm,Lightning-Storm
 1082,Conditions,Weather,Weather,Ice,Ice
 1195,Conditions,Weather,Weather,Ice,Lightning-Storm
@@ -1351,7 +1351,7 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 2148,Phase,Single-phase-ground,Single-phase-ground,Phase-AG,Phase-AG
 2480,Phase,Single-phase-ground,Single-phase-ground,Phase-BG,Phase-BG
 1839,Phase,Single-phase,Single-phase,Phase-A,Phase-A
-2070,Phase,Two-phase-ground,Two-phase-ground,Phases-BCG,Phases-BCG
+2070,Phase,Two-phase-ground,Single-phase-ground,Phases-BCG,Phase-BG
 2458,Phase,Single-phase-ground,Single-phase-ground,Phase-BG,Phase-BG
 2288,Phase,Single-phase-ground,Single-phase-ground,Phase-BG,Phase-BG
 2573,Phase,Single-phase-ground,Single-phase-ground,Phase-AG,Phase-AG
@@ -1373,9 +1373,9 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 2573,Phase,Single-phase-ground,Single-phase-ground,Phase-AG,Phase-AG
 2573,Phase,Single-phase-ground,Single-phase-ground,Phase-AG,Phase-AG
 2573,Phase,Single-phase-ground,Single-phase-ground,Phase-AG,Phase-AG
-1934,Phase,Single-phase-ground,Single-phase-ground,Phase-AG,Phase-AG
+1934,Phase,Single-phase-ground,Three-phase,Phase-AG,Phases-ABC
 1266,Phase,Two-phase-ground,Single-phase-ground,Phases-ABG,Nonspecific-Single-phase-ground
-1882,Phase,Two-phase,Single-phase-ground,Phases-BC,Phase-CG
+1882,Phase,Two-phase,Three-phase,Phases-BC,Phases-ABC
 2480,Phase,Three-phase,Single-phase-ground,Phases-ABC,Phase-BG
 2101,Phase,Single-phase-ground,Single-phase-ground,Phase-AG,Phase-CG
 2300,Phase,Single-phase-ground,Single-phase-ground,Phase-BG,Phase-BG
@@ -1396,5 +1396,5 @@ Sig_ID,Group,Actual_Class,Predicted_Class,Actual_Subclass,Predicted_Subclass
 2288,Phase,Single-phase-ground,Single-phase-ground,Phase-BG,Phase-BG
 2011,Phase,Single-phase-ground,Single-phase-ground,Phase-BG,Phase-BG
 2458,Phase,Single-phase-ground,Single-phase-ground,Phase-BG,Phase-BG
-2099,Phase,Two-phase,Two-phase,Phases-AB,Phases-AB
+2099,Phase,Two-phase,Single-phase-ground,Phases-AB,Nonspecific-Single-phase-ground
 2551,Phase,Single-phase-ground,Single-phase-ground,Phase-CG,Phase-CG

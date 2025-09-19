@@ -1,0 +1,4 @@
+label,raw_prob,adj_prob
+Single-phase-ground,0.403,0.317
+Two-phase-ground,0.377,0.297
+Two-phase,0.335,0.264

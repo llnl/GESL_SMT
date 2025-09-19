@@ -1,0 +1,4 @@
+label,raw_prob,adj_prob
+Weather :: Lightning-Storm,0.543,0.459
+Weather :: Nonspecific-Weather,0.368,0.311
+Weather :: Ice,0.183,0.155

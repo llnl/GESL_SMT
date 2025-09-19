@@ -1,0 +1,6 @@
+Primary,Top class,Adj_prob
+Conditions,Weather,1.0
+Equipment,Overhead-Equipment,0.644
+Events,Fault,0.41
+Phase,Single-phase-ground,0.317
+State,Change-State,1.0

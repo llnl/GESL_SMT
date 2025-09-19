@@ -1,0 +1,4 @@
+label,raw_prob,adj_prob
+Substation :: Transmission,0.159,1.0
+Overhead-Equipment :: Nonspecific-Overhead-Equipment,0.101,0.112
+Overhead-Equipment :: Arrester,0.066,0.073

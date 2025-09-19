@@ -1,0 +1,5 @@
+label,raw_prob,adj_prob
+Two-phase-ground :: Nonspecific-Two-phase-ground,0.338,0.617
+Two-phase :: Phases-AB,0.214,0.458
+Two-phase :: Phases-AC,0.156,0.333
+Two-phase :: Nonspecific-Two-phase,0.098,0.209

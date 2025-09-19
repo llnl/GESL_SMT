@@ -1,0 +1,4 @@
+label,raw_prob,adj_prob
+Fault,0.585,0.41
+System-Event-Condition,0.26,0.182
+Equipment-Failure,0.226,0.158

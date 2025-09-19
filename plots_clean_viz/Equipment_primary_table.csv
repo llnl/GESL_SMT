@@ -1,0 +1,4 @@
+label,raw_prob,adj_prob
+Overhead-Equipment,0.755,0.644
+Interrupting-Device,0.177,0.151
+Substation,0.159,0.136
