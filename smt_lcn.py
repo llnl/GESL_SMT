@@ -51,12 +51,10 @@ def train_for_group( df: pd.DataFrame, group_label: str, n_estimators: int = 100
     if df1.shape[0] != 0:
         # Select feature columns (assumes first five columns are identifiers/labels).
         features = df1.iloc[:, -(df1.shape[1] - 5):]
-        
         # Train binary classifiers for each Class (secondary label).
         label = df1['secondary']
         # Split data for training (95%) and discard test split (not used here).
         x_train, _, y_train, _ = train_test_split(features, label, test_size=0.05, random_state=42)
-
         for evttag in arr_class:
             print("Training classifier for {} Class label...\n".format(evttag))
             # Create binary labels: True for current class, False otherwise.
@@ -319,7 +317,7 @@ def main():
 if __name__ == "__main__":
     # Re-training classifiers to match with latest version of sklearn started at 5/30 10:46am.
     # Load the input DataFrame with features for Providers 9 and 10, separated by sensor.
-    df = pd.read_csv('Inputs/pmu_transmission_features.csv')
+    df = pd.read_csv('Inputs/pmu_transmission_features_header_rename.csv')
 
     # Load mapping dictionary for hierarchical classification (secondary to tertiary labels).
     sec_to_tert_dict = json.load(open('Inputs/sec_to_tert_dict_transmission.json'))
