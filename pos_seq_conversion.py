@@ -37,7 +37,6 @@ Usage:
             * vp_m: Positive sequence voltage magnitude
         - Save the results to a file named 'positive_sequence.csv' in the current directory.
 
-
 Important Notes:
     - All input angles must be in degrees.
     - Ensure all magnitudes are in per unit (p.u.) 
