@@ -41,7 +41,6 @@ Usage:
 Important Notes:
     - All input angles must be in degrees.
     - Ensure all magnitudes are in per unit (p.u.) 
-      (e.g., Amperes for current, Volts for voltage).
     - The script requires the 'pandas' and 'numpy' Python packages.
     - The script will stop with a warning if required columns are missing.
 
