@@ -43,13 +43,6 @@ Important Notes:
     - Ensure all magnitudes are in per unit (p.u.) 
     - The script requires the 'pandas' and 'numpy' Python packages.
     - The script will stop with a warning if required columns are missing.
-
-Example:
-    If your CSV includes columns:
-        ia_m, ib_m, ic_m, ia_a, ib_a, ic_a, va_m, vb_m, vc_m, va_a, vb_a, vc_a
-    You can process it by running:
-        data_pre_process('./Inputs/your_measurement_file.csv')
-For further details or troubleshooting, refer to the script’s docstrings and comments.
 ==============================================================================
 """
 
