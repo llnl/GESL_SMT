@@ -322,17 +322,24 @@ def create_input_dataframe(raw_data):
     sta_data = []         # List to store computed statistics
     sta_headers = []      # List to store feature names
     scaler = StandardScaler()  # Initialize standard scaler for normalization
-    expected_col_order = ["Time", "ROCOF", "FREQ", "IP_ANG", "IP_MAG", "VP_ANG", "VP_MAG"]
+
+    expected_col_order = ["TIME", "ROCOF", "FREQ", "IP_ANG", "IP_MAG", "VP_ANG", "VP_MAG"]
     missing_col = set(expected_col_order) - set(raw_data.columns)
     if missing_col:
         raise ValueError(f"Missing columns in input file: {missing_col}")
     if list(raw_data.columns) != expected_col_order:
         raw_data = raw_data[expected_col_order]
         print("Columns reordered to match expected order.")
+    
     # Drop 'Time' column and standardize the data
-    data_values = raw_data.drop(columns=['Time']).values
+    data_values = raw_data.drop(columns=['TIME']).values
     data_values_standardized = scaler.fit_transform(data_values)
-    df_standardized = pd.DataFrame(data_values_standardized, columns=raw_data.drop(columns=['Time']).columns)
+    df_standardized = pd.DataFrame(data_values_standardized, columns=raw_data.drop(columns=['TIME']).columns)
+
+    # Drop 'Time' column and standardize the data
+    data_values = raw_data.drop(columns=['TIME']).values
+    data_values_standardized = scaler.fit_transform(data_values)
+    df_standardized = pd.DataFrame(data_values_standardized, columns=raw_data.drop(columns=['TIME']).columns)
 
     # Compute statistics for each column (measurement)
     for col in df_standardized.columns:
@@ -416,7 +423,7 @@ def main():
 if __name__ == "__main__":
 
     # Load PMU waveform data (CSV from GESL). Example: Inputs/sigId-978.csv
-    df_input = pd.read_csv('Inputs/sigId-978_mod_rename.csv')
+    df_input = pd.read_csv('Inputs/sigId-978_mod_rename2.csv')
 
     # Metadata describing the input format
     data_type = 'PMU'      # Not used below, but helpful for context/branching in larger scripts
