@@ -127,27 +127,35 @@ pip install pandas numpy scikit-learn matplotlib seaborn
 
 ---
 
-## Branch Creation Rules
+## Branch Management Guidelines
 
-To ensure consistency, please follow these guidelines when creating branches:
+### Main Branch (`main`)
+- Stable, production-ready code only.
+- No direct commits; merge via pull requests after review.
+- Used for releases and deployments.
 
-### Naming Convention
+### Development Branch (`development`)
+- Integrates ongoing work and new features.
+- No direct commits; merge feature branches via pull requests.
+- Regularly sync with `main` and prepare for releases.
+
+### Branch Creation Rules
+
+#### Naming Convention
 
 - **Format:** `dev/organization/branch-name`
   - `dev`: Indicates a development branch.
   - `organization`: Your team, department, or project identifier.
   - `branch-name`: A short, descriptive name for the feature, fix, or task.
 
-#### Examples
+##### Example
+- `dev/LLNL/reform-input`
 
-- dev/LLNL/reform-input
+#### Workflow Guidelines
 
-### Guidelines
-
-- Always create branches from the latest `main` branch.
-- Use clear, concise branch names that describe the purpose.
-- Delete branches after merging to keep the repository clean.
-
+- Always create feature branches from the latest `development` branch.
+- Use clear, concise branch names that describe the branch’s purpose.
+- Delete feature branches after merging to keep the repository clean.
 ## Contact
 
 | Contact Name            | Email Address          | Organization   |
