@@ -127,10 +127,43 @@ pip install pandas numpy scikit-learn matplotlib seaborn
 
 ---
 
+## Branch Management Guidelines
 
+### Main Branch (`main`)
+- Stable, production-ready code only.
+- No direct commits; merge via pull requests after review.
+- Used for releases and deployments.
+
+### Development Branch (`development`)
+- Integrates ongoing work and new features.
+- No direct commits; merge feature branches via pull requests.
+- Regularly sync with `main` and prepare for releases.
+
+### Branch Creation Rules
+
+#### Naming Convention
+
+- **Format:** `dev/organization/branch-name`
+  - `dev`: Indicates a development branch.
+  - `organization`: Your team, department, or project identifier.
+  - `branch-name`: A short, descriptive name for the feature, fix, or task.
+
+##### Example
+- `dev/LLNL/reform-input`
+
+#### Workflow Guidelines
+
+- Always create feature branches from the latest `development` branch.
+- Use clear, concise branch names that describe the branch’s purpose.
+- Delete feature branches after merging to keep the repository clean.
 ## Contact
 
-List Key Authors/PIs Contact Info...
+| Contact Name            | Email Address          | Organization   |
+|-------------------------|------------------------|----------------|
+| Jhi-Young Joo           | joo3@llnl.gov          | LLNL           |
+| Chih-Che (Ryan) Sun     | sun31@llnl.gov         | LLNL           |
+| Christabella Annalicia  | Annalicia1@llnl.gov    | LLNL           |
+| Diego Gandara-Mendez    | gandaramende1@llnl.gov | UTEP, LLNL     |
 
 ## Release
 
