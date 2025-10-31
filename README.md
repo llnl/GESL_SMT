@@ -127,6 +127,26 @@ pip install pandas numpy scikit-learn matplotlib seaborn
 
 ---
 
+## Branch Creation Rules
+
+To ensure consistency, please follow these guidelines when creating branches:
+
+### Naming Convention
+
+- **Format:** `dev/organization/branch-name`
+  - `dev`: Indicates a development branch.
+  - `organization`: Your team, department, or project identifier.
+  - `branch-name`: A short, descriptive name for the feature, fix, or task.
+
+#### Examples
+
+- dev/LLNL/reform-input
+
+### Guidelines
+
+- Always create branches from the latest `main` branch.
+- Use clear, concise branch names that describe the purpose.
+- Delete branches after merging to keep the repository clean.
 
 ## Contact
 
