@@ -160,7 +160,7 @@ pip install pandas numpy scikit-learn matplotlib seaborn
 
 | Contact Name            | Email Address          | Organization   |
 |-------------------------|------------------------|----------------|
-| Jhi-Young Joo           | joo3@llnl.gov          | LLNL           |
+| Jhi-Young Joo (left)    | joo3@llnl.gov          | LLNL           |
 | Chih-Che (Ryan) Sun     | sun31@llnl.gov         | LLNL           |
 | Christabella Annalicia  | Annalicia1@llnl.gov    | LLNL           |
 | Diego Gandara-Mendez    | gandaramende1@llnl.gov | UTEP, LLNL     |
