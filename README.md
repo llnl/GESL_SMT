@@ -1,175 +1,137 @@
-# DOE Grid Event Signature Library Signature Matching Tool
+# GESL - Grid Event Signature Library
 
-This repository contains a **Signature Matching Tool (SMT)** designed to process time-series PMU data, train a hierarchy of binary classifiers, and visualize predictions. It consists of two main components:
+Hierarchical classification system for power grid event signatures with explainable AI (XAI) methods.
 
-- **Training Pipeline** (`smt_lcn.py`) – Trains a hierarchy of binary classifiers for group, class, and subclass labels.
-- **Prediction & Visualization** (`get_prediction.py`) – Loads trained models and uses them to classify new PMU signatures, outputting nested pie charts and feature importance visualizations.
+GESL is a multi-level classification framework that builds and deploys machine learning models for power grid event analysis. It works with PMU (Phasor Measurement Unit) data and provides explainable predictions through multiple XAI methods including SHAP, LIME, and feature importance visualization.
 
----
-
-## Features
-
-- Hierarchical Classification (Primary → Secondary → Tertiary Labels)
-- Per-label binary classifiers using Random Forests
-- Normalization and statistical feature extraction for PMU signals
-- Likelihood estimation for each label (probability-based)
-- Visualizations: nested pie charts for prediction probabilities, bar charts for feature importances
-- Sklearn-compatible pipelines with persistent pickle models
-
----
+See the [QUICKSTART.md](QUICKSTART.md) for a quick guide to getting started.
 
 ## Project Structure
 
 ```
-.
-├── smt_lcn.py                       # Training + Evaluation pipeline
-├── get_prediction.py               # Prediction + Visualization pipeline
-├── Inputs/
-│   ├── pmu_transmission_features.csv     # Training dataset
-│   ├── sigId-980.csv                     # Input signal for prediction
-│   ├── pri_to_sec_dict_transmission.json
-│   └── sec_to_tert_dict_transmission.json
-├── Classifiers/                   # Pickled binary classifiers saved here
-└── Outputs/
-    ├── lcn_rf_test_results.csv         # Prediction outputs
-    └── lcn_rf_metrics_results.csv      # Classification metrics
+GESL/
+├── src/
+│   └── lcn/              # Core library for hierarchical classification
+│       ├── config.py     # Configuration classes
+│       ├── models.py     # Model building (RF, XGBoost)
+│       ├── training.py   # Training pipeline
+│       ├── inference.py  # Inference with XAI explanations
+│       ├── augmentation.py  # Data resampling (SMOTE, ADASYN, GMM)
+│       └── ...
+├── server.py            # Flask server with file upload support
+├── demo_server.py       # Demo server with pre-loaded data
+├── viewer.html          # Interactive web viewer with XAI methods
+├── Data/                # Training data
+├── Classifiers/         # Trained model files
+└── Uploads/             # User-uploaded files
 ```
 
----
-
-## How to Run the Tool
-
-### 1. Training Binary Classifiers
-
-To train new binary classifiers, run:
+## Installation
 
 ```bash
-python smt_lcn.py
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-- **Input**:  
-  - `Inputs/pmu_transmission_features.csv`: Pre-extracted PMU statistical features (includes `primary`, `secondary`, `tertiary` labels).
-  - `Inputs/sec_to_tert_dict_transmission.json`: Mapping from secondary to tertiary labels.
-- **Output**:  
-  - Pickled models saved to `Classifiers/`.
-  - Evaluation reports in `Outputs/`.
+## Usage
 
-### 2. Run Predictions on a New Signature
-
-To classify a new PMU signature and visualize results, run:
-
+#### Full Server (File Upload)
 ```bash
-python get_prediction.py
+python server.py
 ```
+Then open `viewer.html` in your browser and upload your CSV file.
 
-- **Input**:  
-  - `Inputs/sigId-980.csv`: Raw PMU time-series waveform data. Assumed format:
-    ```
-    Time, P001.V1, P001.V2, P001.V3, P001.I1, P001.I2, P001.I3, ...
-    ```
-  - `pri_to_sec_dict_transmission.json`: Group → Class mapping
-  - `sec_to_tert_dict_transmission.json`: Class → Subclass mapping
-
-- **Output**:  
-  - Visualizations (pop-up matplotlib figures):
-    - Pie charts showing predicted class/subclass probabilities
-    - (Optional) Bar charts showing feature importances
-
----
-
-## Input Requirements
-
-### For Training (`pmu_transmission_features.csv`)
-
-| Column Name | Description |
-|-------------|-------------|
-| `sigid`     | Unique ID for the signature |
-| `primary`   | Group-level label |
-| `secondary` | Class-level label |
-| `tertiary`  | Subclass-level label |
-| Feature Columns | PMU-derived statistical features (mean, std, skew, kurtosis) |
-
-### For Prediction (`sigId-980.csv`)
-
-- CSV file with PMU time-series waveform data
-- **Assumes exactly 6 features per PMU** (e.g., `P001.df`, `P001.f`, `P001.ip_a`, `P001.ip_m`, `P001.vp_a`, `P001.vp_m`)
-- First column should be `Time`
-- Automatically computes statistical features per PMU instance
-
----
-
-## Model Details
-
-- **Classifier**: `RandomForestClassifier` from scikit-learn
-- **Approach**: Local Classifier per Node (LCN)
-- **Hierarchy**: Primary (Group) → Secondary (Class) → Tertiary (Subclass)
-- **Evaluation Metrics**:
-  - Accuracy
-  - Hierarchical Precision, Recall, and F1 Score
-
----
-
-## Example Output
-
-- Nested pie chart showing probability distribution across class and subclass labels.
-- Feature importance bar chart (optional toggle).
-- CSV files with evaluation metrics and prediction results.
-
----
-
-## Dependencies
-
-Install required packages with:
-
+#### Demo Server (Pre-loaded Data)
 ```bash
-pip install pandas numpy scikit-learn matplotlib seaborn
+python demo_server.py
+```
+Then open `viewer.html` in your browser to view pre-loaded event classifications.
+
+#### No Server
+
+Look at the `no_app.py` for standalone usage examples.
+
+## Data Format
+
+Input CSV files should contain:
+- Columns 0-4: Metadata (Sig_ID, primary, secondary, tertiary, etc.)
+- Columns 5+: Feature columns (23 statistical features from PMU signals)
+
+Expected features (excluding P001.df_mean):
+```
+P001.df_std, P001.df_skew, P001.df_kurtosis,
+P001.f_mean, P001.f_std, P001.f_skew, P001.f_kurtosis,
+P001.ip_a_mean, P001.ip_a_std, P001.ip_a_skew, P001.ip_a_kurtosis,
+P001.ip_m_mean, P001.ip_m_std, P001.ip_m_skew, P001.ip_m_kurtosis,
+P001.vp_a_mean, P001.vp_a_std, P001.vp_a_skew, P001.vp_a_kurtosis,
+P001.vp_m_mean, P001.vp_m_std, P001.vp_m_skew, P001.vp_m_kurtosis
 ```
 
----
+## Documentation
 
-## Branch Management Guidelines
+Full documentation is available in the following files:
+- [QUICKSTART.md](QUICKSTART.md) - Quick start guide
+- [TODO.md](TODO.md) - Development roadmap and known issues
+- `.env.example` - Environment configuration template
 
-### Main Branch (`main`)
-- Stable, production-ready code only.
-- No direct commits; merge via pull requests after review.
-- Used for releases and deployments.
+For additional help, please reference the Authors section below or open an issue on GitHub.
 
-### Development Branch (`development`)
-- Integrates ongoing work and new features.
-- No direct commits; merge feature branches via pull requests.
-- Regularly sync with `main` and prepare for releases.
+## Community
 
-### Branch Creation Rules
+GESL is an open source project. Questions, discussion, and contributions are welcome. Contributions can be anything from new features to bugfixes, documentation, or improvements to the classification models.
 
-#### Naming Convention
+Resources:
+- **Contact**: See Authors section for team contact information
+- **Documentation**: See files listed in the Documentation section above
 
-- **Format:** `dev/organization/branch-name`
-  - `dev`: Indicates a development branch.
-  - `organization`: Your team, department, or project identifier.
-  - `branch-name`: A short, descriptive name for the feature, fix, or task.
+## Contributing
 
-##### Example
-- `dev/LLNL/reform-input`
+Contributing to GESL is relatively easy. Just send us a pull request.
 
-#### Workflow Guidelines
+Your PR must:
+- Make `main` (or `develop`) the destination branch
+- Pass all unit tests and validation checks
+- Follow the existing code style and conventions
+- Include appropriate documentation for new features
+- Sign off all commits with `git commit --signoff`. Signoff says that you agree to the Developer Certificate of Origin.
 
-- Always create feature branches from the latest `development` branch.
-- Use clear, concise branch names that describe the branch’s purpose.
-- Delete feature branches after merging to keep the repository clean.
-## Contact
+For more details, see [CONTRIBUTING.md](community-health/CONTRIBUTING.md).
 
-| Contact Name            | Email Address          | Organization   |
-|-------------------------|------------------------|----------------|
-| Jhi-Young Joo (left)    | joo3@llnl.gov          | LLNL           |
-| Chih-Che (Ryan) Sun     | sun31@llnl.gov         | LLNL           |
-| Christabella Annalicia  | Annalicia1@llnl.gov    | LLNL           |
-| Diego Gandara-Mendez    | gandaramende1@llnl.gov | UTEP, LLNL     |
+## Code of Conduct
+
+Please note that GESL has a Code of Conduct. By participating in the GESL community, you agree to abide by its rules.
+
+See [CODE_OF_CONDUCT.md](community-health/CODE_OF_CONDUCT.md) for details.
+
+## Authors
+
+| Contact Name | Email Address | Organization | Status |
+|---|---|---|---|
+| Jhi-Young Joo |  | LLNL | Left LLNL |
+| Chih-Che (Ryan) Sun |  | LLNL | Left LLNL |
+| Christabella Annalicia | Annalicia1@llnl.gov | LLNL | Current |
+| Diego Gandara-Mendez | gandaramende1@llnl.gov | UTEP, LLNL | Current |
+| Jean Tonday | tondayrodrig1@llnl.gov | FIU, LLNL | Current |
+
+## License
+
+GESL is distributed under the terms of BSD-3 license.
+
+All new contributions must be made under the same license.
+
+See LICENSE for details.
+
+SPDX-License-Identifier: BSD-3-Clause
 
 ## Release
 
-The code of this site is released under the BSD 3 License. For more details, see the [LICENSE](LICENSE) File.
-
-LLNL-CODE-2010456
-
-
-
+LLNL-CODE-2025335

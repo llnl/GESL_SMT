@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hierarchical Classification Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .upload-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            transition: all 0.5s ease;
+        }
+
+        .upload-container.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .upload-box {
+            background: white;
+            padding: 50px 60px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 400px;
+        }
+
+        .upload-button, .load-button {
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .upload-button:hover, .load-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .demo-button {
+            background: #6c757d;
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .demo-button:hover {
+            box-shadow: 0 8px 20px rgba(108, 117, 125, 0.6);
+        }
+
+        .results-container {
+            width: 100%;
+            max-width: 1400px;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.5s ease;
+        }
+
+        .results-container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .columns-wrapper {
+            display: flex;
+            gap: 20px;
+        }
+
+        .column {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 400px;
+        }
+
+        .column-header {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .prediction-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .prediction-item:hover {
+            border-color: #764ba2;
+            transform: translateX(5px);
+        }
+
+        .prediction-item.selected {
+            border-color: #764ba2;
+            background: #f0e6ff;
+        }
+
+        .prediction-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .prediction-confidence {
+            font-size: 14px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .confidence-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
+        .explanation-section {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .explanation-section.visible {
+            opacity: 1;
+            max-height: 1200px;
+        }
+
+        .explanation-header {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .explanation-subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .explanation-chart {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .impact-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 0 200px;
+        }
+
+        .impact-labels.hidden {
+            display: none;
+        }
+
+        .impact-label {
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .impact-label.negative {
+            color: #dc3545;
+            text-align: center;
+            padding-right: 100px;
+        }
+
+        .impact-label.positive {
+            color: #007bff;
+            text-align: center;
+            padding-left: 100px;
+        }
+
+        .chart-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 10px;
+        }
+
+        .chart-bars::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chart-bars::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .chart-bars::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        .chart-bars::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        .feature-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .feature-name {
+            min-width: 200px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .bar-container {
+            flex: 1;
+            height: 30px;
+            position: relative;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            position: absolute;
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        /* Positive impact colors (blue gradient based on intensity) */
+        .bar-fill.positive.high {
+            background: linear-gradient(90deg, #0056b3 0%, #003d82 100%); /* Dark blue */
+        }
+
+        .bar-fill.positive.medium {
+            background: linear-gradient(90deg, #007bff 0%, #0056b3 100%); /* Medium blue */
+        }
+
+        .bar-fill.positive.low {
+            background: linear-gradient(90deg, #6c9bd9 0%, #4a7fc4 100%); /* Light blue */
+        }
+
+        /* Negative impact colors (red gradient based on intensity) */
+        .bar-fill.negative.high {
+            background: linear-gradient(90deg, #8b0000 0%, #6b0000 100%); /* Dark red */
+        }
+
+        .bar-fill.negative.medium {
+            background: linear-gradient(90deg, #dc3545 0%, #c82333 100%); /* Medium red */
+        }
+
+        .bar-fill.negative.low {
+            background: linear-gradient(90deg, #f07383 0%, #e05566 100%); /* Light red */
+        }
+
+        .bar-value {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .zero-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #333;
+            z-index: 1;
+        }
+
+        .xai-navigation {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .xai-nav-button {
+            padding: 10px 30px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #495057;
+            transition: all 0.2s ease;
+        }
+
+        .xai-nav-button:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .xai-nav-button.active {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+        }
+
+        .xai-type-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6c757d;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .xai-explanation {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .xai-explanation-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .xai-explanation-text {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .path-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .path-step {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .path-step:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateX(5px);
+        }
+
+        .path-step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .path-step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .path-step-importance {
+            font-size: 12px;
+            color: #666;
+            background: #f8f9fa;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-weight: 600;
+        }
+
+        .path-step-decision {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .path-step-feature {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .path-step-value {
+            color: #764ba2;
+            font-weight: bold;
+        }
+
+
+        .path-step-support {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .path-step-direction {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+
+        .path-step-direction.left {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .path-step-direction.right {
+            background: #dfe6e9;
+            color: #0984e3;
+        }
+
+        /* Slideshow Modal Styles */
+        .slideshow-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .slideshow-modal.active {
+            display: flex;
+        }
+
+        .slideshow-content {
+            background: white;
+            border-radius: 20px;
+            width: 95%;
+            max-width: 1200px;
+            max-height: 90vh;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slideshow-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .slideshow-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .slideshow-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .slideshow-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+        .slideshow-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .slideshow-body {
+            padding: 30px 80px;
+            flex: 1;
+            overflow-y: hidden;
+            overflow-x: hidden;
+            position: relative;
+            z-index: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide {
+            display: none;
+            animation: fadeIn 0.4s ease;
+            width: 100%;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        .slide-content {
+            max-width: 100%;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-content h3 {
+            font-size: 24px;
+            color: #667eea;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .slide-content p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .slide-content ul {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+
+        .slide-content li {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .slide-content .highlight {
+            background: #f0e6ff;
+            padding: 12px 18px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            margin: 15px 0;
+        }
+
+        .slide-content .example {
+            background: #f8f9fa;
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 1px solid #dee2e6;
+        }
+
+        .slide-content .formula {
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .visual-diagram {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .visual-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+        }
+
+        .visual-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 100px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+            font-size: 14px;
+        }
+
+        .visual-box.light {
+            background: #f0e6ff;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .visual-arrow {
+            font-size: 32px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .visual-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .visual-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .visual-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .visual-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .color-bar {
+            height: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .color-segment {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .comparison-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .mini-chart {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .mini-bar {
+            flex: 1;
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .mini-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+        }
+
+        .step-number-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        .slideshow-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-top: 1px solid #e9ecef;
+            background: #f8f9fa;
+            position: relative;
+            z-index: 100;
+        }
+
+        .slideshow-nav-button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 15px;
+        }
+
+        .slideshow-nav-button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .slideshow-nav-button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .slide-counter {
+            font-size: 14px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .info-icon {
+            display: inline-block;
+            margin-left: 8px;
+            width: 18px;
+            height: 18px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 18px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .info-icon:hover {
+            background: #764ba2;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="upload-container" id="uploadContainer">
+        <div class="upload-box">
+            <h2 style="color: #667eea; margin-bottom: 20px;">Upload PMU Data</h2>
+            <input type="file" id="fileInput" accept=".csv" style="display: none;">
+            <button class="upload-button" id="uploadBtn" onclick="document.getElementById('fileInput').click()">
+                📁 Choose CSV File
+            </button>
+            <p id="selectedFile" style="margin-top: 15px; color: #666; font-size: 14px;"></p>
+            <button class="load-button" id="processBtn" style="display: none; margin-top: 20px;">
+                🚀 Process File
+            </button>
+            <div style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e9ecef;">
+                <p style="color: #999; font-size: 13px; margin-bottom: 10px;">Or use demo data:</p>
+                <button class="load-button demo-button" id="loadBtn">LOAD DEMO</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="results-container" id="resultsContainer">
+        <div class="columns-wrapper">
+            <div class="column" id="primaryColumn">
+                <div class="column-header">Primary</div>
+                <div id="primaryContent"></div>
+            </div>
+
+            <div class="column" id="secondaryColumn">
+                <div class="column-header">Secondary</div>
+                <div id="secondaryContent"></div>
+            </div>
+
+            <div class="column" id="tertiaryColumn">
+                <div class="column-header">Tertiary</div>
+                <div id="tertiaryContent"></div>
+            </div>
+        </div>
+
+        <div class="explanation-section" id="explanationSection">
+            <div class="explanation-header"><span id="xaiMethodName">SHAP</span> for: <span id="explanationLabel"></span></div>
+            <div class="explanation-subtitle" id="explanationSubtitle">Top features that influenced this prediction</div>
+            <div class="explanation-chart">
+                <div class="impact-labels" id="impactLabels">
+                    <div class="impact-label negative">← Negative Impact</div>
+                    <div class="impact-label positive">Positive Impact →</div>
+                </div>
+                <div class="chart-bars" id="chartBars"></div>
+                <div class="xai-navigation">
+                    <button class="xai-nav-button active" data-type="shap" onclick="switchXAIType('shap')">
+                        SHAP
+                        <span class="info-icon" onclick="event.stopPropagation(); openSlideshow('shap')" title="Learn more about SHAP">?</span>
+                    </button>
+                    <button class="xai-nav-button" data-type="lime" onclick="switchXAIType('lime')">
+                        LIME
+                        <span class="info-icon" onclick="event.stopPropagation(); openSlideshow('lime')" title="Learn more about LIME">?</span>
+                    </button>
+                    <button class="xai-nav-button" data-type="mdi" onclick="switchXAIType('mdi')">
+                        MDI
+                        <span class="info-icon" onclick="event.stopPropagation(); openSlideshow('mdi')" title="Learn more about MDI">?</span>
+                    </button>
+                    <button class="xai-nav-button" data-type="path" onclick="switchXAIType('path')">
+                        Decision Path
+                        <span class="info-icon" onclick="event.stopPropagation(); openSlideshow('path')" title="Learn more about Decision Path">?</span>
+                    </button>
+                    <button class="xai-nav-button" data-type="counterfactual" onclick="switchXAIType('counterfactual')">
+                        Counterfactual
+                        <span class="info-icon" onclick="event.stopPropagation(); openSlideshow('counterfactual')" title="Learn more about Counterfactual">?</span>
+                    </button>
+                </div>
+                <div class="xai-explanation" id="xaiExplanation">
+                    <div class="xai-explanation-title" id="xaiExplanationTitle">What is SHAP?</div>
+                    <div class="xai-explanation-text" id="xaiExplanationText">
+                        SHAP (SHapley Additive exPlanations) values show how much each feature contributed to this prediction. Features with larger bars had more influence. Positive values (blue) pushed the model toward this classification, while negative values (red) pushed it away.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slideshow Modal -->
+    <div class="slideshow-modal" id="slideshowModal">
+        <div class="slideshow-content">
+            <div class="slideshow-header">
+                <div class="slideshow-title" id="slideshowTitle">SHAP Explanation</div>
+                <div class="slideshow-subtitle">Step-by-step guide</div>
+                <button class="slideshow-close" onclick="closeSlideshow()">&times;</button>
+            </div>
+            <div class="slideshow-body" id="slideshowBody">
+                <!-- Slides will be dynamically inserted here -->
+            </div>
+            <div class="slideshow-navigation">
+                <button class="slideshow-nav-button" id="prevSlide" onclick="changeSlide(-1)">← Previous</button>
+                <div class="slide-counter">
+                    <span id="currentSlideNum">1</span> / <span id="totalSlides">1</span>
+                </div>
+                <button class="slideshow-nav-button" id="nextSlide" onclick="changeSlide(1)">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPrimary = null;
+        let currentSecondary = null;
+        let currentXAIType = 'shap'; // Remember last XAI type
+        let currentExplanationData = null; // Store current explanation data
+        let currentLevel = null; // Store current level for counterfactual
+        let currentLabel = null; // Store current label for counterfactual
+        let currentSlideIndex = 0;
+        let currentSlideshowType = null;
+        let selectedFile = null;
+
+        // File selection handler
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                document.getElementById('selectedFile').textContent = `Selected: ${selectedFile.name}`;
+                document.getElementById('processBtn').style.display = 'inline-block';
+            }
+        });
+
+        // Process uploaded file
+        document.getElementById('processBtn').addEventListener('click', uploadAndProcess);
+
+        // Load demo data
+        document.getElementById('loadBtn').addEventListener('click', loadResults);
+
+        async function uploadAndProcess() {
+            if (!selectedFile) {
+                alert('Please select a file first');
+                return;
+            }
+
+            document.getElementById('uploadContainer').classList.add('hidden');
+            document.getElementById('resultsContainer').classList.add('visible');
+
+            // Show loading state
+            document.getElementById('primaryContent').innerHTML = '<div class="loading">Processing file...</div>';
+
+            try {
+                // Create FormData and append file
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                // Upload file
+                const uploadResponse = await fetch('http://localhost:5001/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const uploadData = await uploadResponse.json();
+
+                if (uploadData.status !== 'success') {
+                    throw new Error(uploadData.message || 'Upload failed');
+                }
+
+                console.log('File uploaded successfully:', uploadData.filename);
+
+                // Fetch primary predictions
+                const response = await fetch('http://localhost:5001/predictions');
+                const data = await response.json();
+
+                // Render primary column
+                renderColumn('primary', data.primary);
+
+                // Auto-select top primary and load its children
+                if (data.primary && data.primary.length > 0) {
+                    const topPrimary = data.primary[0];
+                    await selectPrimary(topPrimary.label, document.querySelector('.prediction-item'));
+                }
+            } catch (error) {
+                console.error('Error processing file:', error);
+                alert(`Failed to process file: ${error.message}. Make sure Flask backend is running on port 5001.`);
+            }
+        }
+
+        async function loadResults() {
+            document.getElementById('uploadContainer').classList.add('hidden');
+            document.getElementById('resultsContainer').classList.add('visible');
+
+            // Show loading state
+            document.getElementById('primaryContent').innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                // Trigger backend computation
+                await fetch('http://localhost:5001/load', { method: 'POST' });
+
+                // Fetch primary predictions
+                const response = await fetch('http://localhost:5001/predictions');
+                const data = await response.json();
+
+                // Render primary column
+                renderColumn('primary', data.primary);
+
+                // Auto-select top primary and load its children
+                if (data.primary && data.primary.length > 0) {
+                    const topPrimary = data.primary[0];
+                    await selectPrimary(topPrimary.label, document.querySelector('.prediction-item'));
+                }
+            } catch (error) {
+                console.error('Error loading results:', error);
+                alert('Failed to load results. Make sure Flask backend is running on port 5001.');
+            }
+        }
+
+        function renderColumn(level, items) {
+            const contentDiv = document.getElementById(`${level}Content`);
+            contentDiv.innerHTML = '';
+
+            if (!items || items.length === 0) {
+                contentDiv.innerHTML = '<div class="loading">No data</div>';
+                return;
+            }
+
+            items.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'prediction-item';
+                itemDiv.dataset.label = item.label;
+
+                itemDiv.innerHTML = `
+                    <div class="prediction-label">
+                        <span>${item.label}</span>
+                        <span class="prediction-confidence">${(item.confidence * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: 0%"></div>
+                    </div>
+                `;
+
+                // Add click handler based on level
+                if (level === 'primary') {
+                    itemDiv.onclick = () => {
+                        selectPrimary(item.label, itemDiv);
+                        showExplanation(level, item.label);
+                    };
+                } else if (level === 'secondary') {
+                    itemDiv.onclick = () => {
+                        selectSecondary(item.label, itemDiv);
+                        showExplanation(level, item.label);
+                    };
+                } else if (level === 'tertiary') {
+                    itemDiv.onclick = () => {
+                        // Just select for visual, show explanation
+                        document.querySelectorAll('#tertiaryContent .prediction-item').forEach(el => {
+                            el.classList.remove('selected');
+                        });
+                        itemDiv.classList.add('selected');
+                        showExplanation(level, item.label);
+                    };
+                }
+
+                contentDiv.appendChild(itemDiv);
+
+                // Animate confidence bar
+                setTimeout(() => {
+                    itemDiv.querySelector('.confidence-fill').style.width = (item.confidence * 100) + '%';
+                }, 50 * index);
+            });
+        }
+
+        async function selectPrimary(primaryLabel, itemDiv) {
+            currentPrimary = primaryLabel;
+
+            // Update selection visual
+            document.querySelectorAll('#primaryContent .prediction-item').forEach(el => {
+                el.classList.remove('selected');
+            });
+            itemDiv.classList.add('selected');
+
+            // Show loading in secondary
+            document.getElementById('secondaryContent').innerHTML = '<div class="loading">Loading...</div>';
+            document.getElementById('tertiaryContent').innerHTML = '<div class="loading">Select a secondary class</div>';
+
+            try {
+                // Fetch filtered secondaries
+                const response = await fetch(`http://localhost:5001/predictions/${encodeURIComponent(primaryLabel)}`);
+                const data = await response.json();
+
+                // Render secondary column
+                renderColumn('secondary', data.secondary);
+
+                // Auto-select top secondary
+                if (data.secondary && data.secondary.length > 0) {
+                    const topSecondary = data.secondary[0];
+                    setTimeout(() => {
+                        const secondaryItem = document.querySelector(`#secondaryContent .prediction-item[data-label="${topSecondary.label}"]`);
+                        if (secondaryItem) {
+                            selectSecondary(topSecondary.label, secondaryItem);
+                        }
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error loading secondaries:', error);
+                document.getElementById('secondaryContent').innerHTML = '<div class="loading">Error loading data</div>';
+            }
+        }
+
+        async function selectSecondary(secondaryLabel, itemDiv) {
+            currentSecondary = secondaryLabel;
+
+            // Update selection visual
+            document.querySelectorAll('#secondaryContent .prediction-item').forEach(el => {
+                el.classList.remove('selected');
+            });
+            itemDiv.classList.add('selected');
+
+            // Show loading in tertiary
+            document.getElementById('tertiaryContent').innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                // Fetch filtered tertiaries
+                const response = await fetch(`http://localhost:5001/predictions/${encodeURIComponent(currentPrimary)}/${encodeURIComponent(secondaryLabel)}`);
+                const data = await response.json();
+
+                // Render tertiary column
+                renderColumn('tertiary', data.tertiary);
+            } catch (error) {
+                console.error('Error loading tertiaries:', error);
+                document.getElementById('tertiaryContent').innerHTML = '<div class="loading">Error loading data</div>';
+            }
+        }
+
+        async function showExplanation(level, label) {
+            const section = document.getElementById('explanationSection');
+            const labelSpan = document.getElementById('explanationLabel');
+            const chartBars = document.getElementById('chartBars');
+
+            labelSpan.textContent = label;
+            currentLevel = level;  // Store for counterfactual
+            currentLabel = label;  // Store for counterfactual
+
+            // Show loading
+            chartBars.innerHTML = '<div class="loading">Loading explanations...</div>';
+            section.classList.add('visible');
+
+            try {
+                // Fetch explanations (includes SHAP, LIME, and MDI)
+                const response = await fetch(`http://localhost:5001/explanations/${level}/${encodeURIComponent(label)}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    chartBars.innerHTML = `<div class="loading">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                // Store data globally
+                currentExplanationData = data;
+
+                // Render using the remembered XAI type
+                renderXAIChart(currentXAIType);
+
+            } catch (error) {
+                console.error('Error loading explanations:', error);
+                chartBars.innerHTML = '<div class="loading">Error loading explanations</div>';
+            }
+        }
+
+        function switchXAIType(type) {
+            currentXAIType = type;
+
+            // Update button states
+            document.querySelectorAll('.xai-nav-button').forEach(btn => {
+                if (btn.dataset.type === type) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Re-render chart with new type
+            if (currentExplanationData) {
+                renderXAIChart(type);
+            }
+        }
+
+        function renderXAIChart(type) {
+            const xaiMethodName = document.getElementById('xaiMethodName');
+            const xaiExplanationTitle = document.getElementById('xaiExplanationTitle');
+            const xaiExplanationText = document.getElementById('xaiExplanationText');
+            const chartBars = document.getElementById('chartBars');
+            const impactLabels = document.getElementById('impactLabels');
+            const explanationSubtitle = document.getElementById('explanationSubtitle');
+
+            if (type === 'shap') {
+                xaiMethodName.textContent = 'SHAP';
+                xaiExplanationTitle.textContent = 'What is SHAP?';
+                xaiExplanationText.textContent = 'SHAP (SHapley Additive exPlanations) values show how much each feature contributed to this prediction. Features with larger bars had more influence. Positive values (blue) pushed the model toward this classification, while negative values (red) pushed it away. SHAP is based on game theory and provides consistent, reliable explanations.';
+                explanationSubtitle.textContent = 'Top features that influenced this prediction';
+                impactLabels.classList.remove('hidden');
+                renderChart(currentExplanationData.features, 'shap');
+            } else if (type === 'lime') {
+                xaiMethodName.textContent = 'LIME';
+                xaiExplanationTitle.textContent = 'What is LIME?';
+                xaiExplanationText.textContent = 'LIME (Local Interpretable Model-agnostic Explanations) shows which features were most important for this specific prediction by creating a simplified model around it. Positive values (blue) support this classification, while negative values (red) oppose it. LIME focuses on local explanations, making complex models easier to understand for individual predictions.';
+                explanationSubtitle.textContent = 'Top features that influenced this prediction';
+                impactLabels.classList.remove('hidden');
+                renderChart(currentExplanationData.features, 'lime');
+            } else if (type === 'mdi') {
+                xaiMethodName.textContent = 'MDI (Feature Importance)';
+                xaiExplanationTitle.textContent = 'What is Mean Decrease in Impurity (MDI)?';
+                xaiExplanationText.textContent = 'MDI (Mean Decrease in Impurity) shows the average decrease in node impurity (e.g., Gini impurity) when splitting on each feature across all trees in the Random Forest. Higher values indicate features that are more important for making accurate predictions globally across the entire model. Unlike SHAP and LIME which are instance-specific, MDI provides a global view of feature importance.';
+                explanationSubtitle.textContent = 'Global feature importance from Random Forest';
+                impactLabels.classList.add('hidden');
+                renderMDIChart(currentExplanationData.features);
+            } else if (type === 'path') {
+                xaiMethodName.textContent = 'Decision Path';
+                xaiExplanationTitle.textContent = 'What is Decision Path?';
+                xaiExplanationText.textContent = 'Decision Path shows the step-by-step decisions the Random Forest made. Each step shows a condition (if feature ≤ or > threshold) and whether the actual input satisfied it. The importance score (information gain) indicates how critical that decision was. Higher scores mean the decision significantly helped classify the sample. Support percentage shows how many trees agreed on this specific decision.';
+                explanationSubtitle.textContent = '10 decisions that produced the most information gain';
+                impactLabels.classList.add('hidden');
+                renderDecisionPath(currentExplanationData.path);
+            } else if (type === 'counterfactual') {
+                xaiMethodName.textContent = 'Counterfactual';
+                xaiExplanationTitle.textContent = 'What is a Counterfactual?';
+                xaiExplanationText.textContent = 'Counterfactual analysis shows the minimum percentage change needed in each feature to cause misclassification (flip the prediction across the 50% threshold). Smaller percentages indicate features the model is more sensitive to. This helps identify which features have the most impact on the prediction and how robust the classification is.';
+                explanationSubtitle.textContent = 'Feature changes that would alter the prediction';
+                impactLabels.classList.add('hidden');
+                renderCounterfactual(currentLevel, currentLabel);
+            }
+        }
+
+        function renderDecisionPath(pathSteps) {
+            const chartBars = document.getElementById('chartBars');
+            chartBars.innerHTML = '';
+
+            if (!pathSteps || pathSteps.length === 0) {
+                chartBars.innerHTML = '<div class="loading">No decision path available</div>';
+                return;
+            }
+
+            const pathContainer = document.createElement('div');
+            pathContainer.className = 'path-steps';
+
+            pathSteps.forEach((step, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'path-step';
+
+                const header = document.createElement('div');
+                header.className = 'path-step-header';
+
+                const stepNumber = document.createElement('span');
+                stepNumber.className = 'path-step-number';
+                stepNumber.textContent = index + 1;
+
+                const importance = document.createElement('span');
+                importance.className = 'path-step-importance';
+                importance.textContent = `Amount of information gained by decision: ${(step.gain || 0).toFixed(4)}`;
+
+                header.appendChild(stepNumber);
+                header.appendChild(importance);
+
+                const decision = document.createElement('div');
+                decision.className = 'path-step-decision';
+
+                const directionSymbol = step.direction === 'left' ? '≤' : '>';
+                const directionClass = step.direction === 'left' ? 'left' : 'right';
+
+                decision.innerHTML = `
+                    If <span class="path-step-feature">${step.feature_name}</span>
+                    <span class="path-step-direction ${directionClass}">${directionSymbol}</span>
+                    <span class="path-step-value">${step.threshold.toFixed(4)}</span>
+                    <br>
+                    <small style="color: #666;">(Actual value: <span class="path-step-value">${step.actual_value.toFixed(4)}</span>)</small>
+                `;
+
+                const support = document.createElement('div');
+                support.className = 'path-step-support';
+                support.textContent = `${step.support_pct.toFixed(1)}% of trees agreed on this decision at depth ${step.depth}`;
+
+                stepDiv.appendChild(header);
+                stepDiv.appendChild(decision);
+                stepDiv.appendChild(support);
+
+                pathContainer.appendChild(stepDiv);
+
+                // Animate
+                setTimeout(() => {
+                    stepDiv.style.opacity = '0';
+                    stepDiv.style.transform = 'translateX(-20px)';
+                    setTimeout(() => {
+                        stepDiv.style.transition = 'all 0.3s ease';
+                        stepDiv.style.opacity = '1';
+                        stepDiv.style.transform = 'translateX(0)';
+                    }, 50);
+                }, index * 100);
+            });
+
+            chartBars.appendChild(pathContainer);
+        }
+
+        function renderChart(features, valueType) {
+            const chartBars = document.getElementById('chartBars');
+            chartBars.innerHTML = '';
+
+            // Sort by absolute value to show most important features first
+            const sortedFeatures = [...features].sort((a, b) => Math.abs(b[valueType]) - Math.abs(a[valueType]));
+
+            // Take top 10 features
+            const topFeatures = sortedFeatures.slice(0, 10);
+
+            // Find max absolute value for scaling
+            const maxAbs = Math.max(...topFeatures.map(f => Math.abs(f[valueType])));
+
+            topFeatures.forEach((feature, index) => {
+                const featureBar = document.createElement('div');
+                featureBar.className = 'feature-bar';
+
+                const featureName = document.createElement('div');
+                featureName.className = 'feature-name';
+                featureName.textContent = feature.name;
+
+                const barContainer = document.createElement('div');
+                barContainer.className = 'bar-container';
+
+                // Add zero line
+                const zeroLine = document.createElement('div');
+                zeroLine.className = 'zero-line';
+                barContainer.appendChild(zeroLine);
+
+                // Create bar with intensity-based color
+                const barFill = document.createElement('div');
+                const value = feature[valueType];
+                const absValue = Math.abs(value);
+                const isPositive = value >= 0;
+
+                // Determine intensity level based on absolute value relative to max
+                const intensity = absValue / maxAbs;
+                let intensityClass;
+                if (intensity > 0.66) {
+                    intensityClass = 'high'; // Very impactful
+                } else if (intensity > 0.33) {
+                    intensityClass = 'medium'; // Somewhat impactful
+                } else {
+                    intensityClass = 'low'; // Slightly impactful
+                }
+
+                barFill.className = `bar-fill ${isPositive ? 'positive' : 'negative'} ${intensityClass}`;
+
+                const barValue = document.createElement('div');
+                barValue.className = 'bar-value';
+                barValue.textContent = value.toFixed(4);
+
+                // Calculate bar width and position
+                const widthPercent = absValue / maxAbs * 50; // 50% max (half the container)
+
+                // Set minimum width to accommodate text (at least 80px for 6 digits)
+                const minWidthPx = 80;
+                const containerWidth = 600; // Approximate container width (half of bar-container)
+                const calculatedWidthPx = (widthPercent / 100) * containerWidth;
+                const finalWidthPx = Math.max(minWidthPx, calculatedWidthPx);
+                const finalWidthPercent = (finalWidthPx / containerWidth) * 100;
+
+                if (value >= 0) {
+                    // Positive: start from center, go right
+                    barFill.style.left = '50%';
+                    barFill.style.width = '0%';
+                } else {
+                    // Negative: start from center, go left
+                    barFill.style.right = '50%';
+                    barFill.style.width = '0%';
+                }
+
+                barFill.appendChild(barValue);
+                barContainer.appendChild(barFill);
+
+                featureBar.appendChild(featureName);
+                featureBar.appendChild(barContainer);
+                chartBars.appendChild(featureBar);
+
+                // Animate bar with minimum width
+                setTimeout(() => {
+                    barFill.style.width = Math.max(finalWidthPercent, 13) + '%'; // Min 13% for text visibility
+                }, 50 * index);
+            });
+        }
+
+        function renderMDIChart(features) {
+            const chartBars = document.getElementById('chartBars');
+            chartBars.innerHTML = '';
+
+            // Sort by MDI value (descending)
+            const sortedFeatures = [...features].sort((a, b) => b.mdi - a.mdi);
+
+            // Take top 10 features
+            const topFeatures = sortedFeatures.slice(0, 10);
+
+            // Find max value for scaling
+            const maxValue = Math.max(...topFeatures.map(f => f.mdi));
+
+            topFeatures.forEach((feature, index) => {
+                const featureBar = document.createElement('div');
+                featureBar.className = 'feature-bar';
+
+                const featureName = document.createElement('div');
+                featureName.className = 'feature-name';
+                featureName.textContent = feature.name;
+
+                const barContainer = document.createElement('div');
+                barContainer.className = 'bar-container';
+
+                // Create bar (MDI is always positive, no zero line needed)
+                const barFill = document.createElement('div');
+                const value = feature.mdi;
+
+                // Determine intensity level
+                const intensity = value / maxValue;
+                let intensityClass;
+                if (intensity > 0.66) {
+                    intensityClass = 'high';
+                } else if (intensity > 0.33) {
+                    intensityClass = 'medium';
+                } else {
+                    intensityClass = 'low';
+                }
+
+                barFill.className = `bar-fill positive ${intensityClass}`;
+
+                const barValue = document.createElement('div');
+                barValue.className = 'bar-value';
+                barValue.textContent = value.toFixed(4);
+
+                // Calculate bar width (full width since always positive)
+                const widthPercent = (value / maxValue) * 100;
+
+                barFill.style.left = '0';
+                barFill.style.width = '0%';
+
+                barFill.appendChild(barValue);
+                barContainer.appendChild(barFill);
+
+                featureBar.appendChild(featureName);
+                featureBar.appendChild(barContainer);
+                chartBars.appendChild(featureBar);
+
+                // Animate bar
+                setTimeout(() => {
+                    barFill.style.width = Math.max(widthPercent, 15) + '%'; // Min 15% for text visibility
+                }, 50 * index);
+            });
+        }
+
+        async function renderCounterfactual(level, label) {
+            const chartBars = document.getElementById('chartBars');
+            chartBars.innerHTML = '<div class="loading">Generating counterfactual...</div>';
+
+            try {
+                const response = await fetch(`http://localhost:5001/counterfactual/${level}/${encodeURIComponent(label)}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    chartBars.innerHTML = `<div class="loading">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                if (!data.changes || data.changes.length === 0) {
+                    chartBars.innerHTML = '<div class="loading">No counterfactuals found</div>';
+                    return;
+                }
+
+                chartBars.innerHTML = '';
+
+                // Add prediction summary
+                const summaryDiv = document.createElement('div');
+                summaryDiv.style.cssText = 'background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
+                summaryDiv.innerHTML = `
+                    <div style="text-align: center;">
+                        <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Current Prediction</div>
+                        <div style="font-size: 24px; font-weight: bold; color: #667eea;">Class ${data.current_prediction} (${(data.current_probability * 100).toFixed(1)}%)</div>
+                        <div style="font-size: 12px; color: #999; margin-top: 10px;">
+                            Minimum changes needed per feature to flip prediction to Class ${data.desired_prediction}
+                        </div>
+                    </div>
+                `;
+                chartBars.appendChild(summaryDiv);
+
+                // Render feature changes
+                const changesContainer = document.createElement('div');
+                changesContainer.style.cssText = 'background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
+
+                data.changes.forEach((change, index) => {
+                    const changeDiv = document.createElement('div');
+                    changeDiv.style.cssText = 'padding: 15px; margin-bottom: 12px; border-left: 4px solid ' + (change.change > 0 ? '#28a745' : '#dc3545') + '; background: #f8f9fa; border-radius: 5px;';
+
+                    const changeDirection = change.change > 0 ? 'increase' : 'decrease';
+                    const changeColor = change.change > 0 ? '#28a745' : '#dc3545';
+                    const changeSymbol = change.change > 0 ? '↑' : '↓';
+
+                    changeDiv.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="font-weight: bold; color: #333; font-size: 15px;">${change.feature}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: ${changeColor};">
+                                ${changeSymbol} ${Math.abs(change.change).toFixed(4)}
+                            </div>
+                        </div>
+                        <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
+                            This feature needs a <span style="font-weight: bold; color: ${changeColor};">${Math.abs(change.change).toFixed(4)} ${changeDirection}</span> to shift the prediction
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999;">
+                            <span>Current: ${change.original.toFixed(4)}</span>
+                            <span style="color: ${changeColor}; font-weight: 600;">→</span>
+                            <span>New: ${change.counterfactual.toFixed(4)}</span>
+                        </div>
+                    `;
+
+                    changesContainer.appendChild(changeDiv);
+
+                    // Animate
+                    setTimeout(() => {
+                        changeDiv.style.opacity = '0';
+                        changeDiv.style.transform = 'translateX(-10px)';
+                        setTimeout(() => {
+                            changeDiv.style.transition = 'all 0.3s ease';
+                            changeDiv.style.opacity = '1';
+                            changeDiv.style.transform = 'translateX(0)';
+                        }, 50);
+                    }, index * 80);
+                });
+
+                chartBars.appendChild(changesContainer);
+
+            } catch (error) {
+                console.error('Error loading counterfactual:', error);
+                chartBars.innerHTML = '<div class="loading">Error generating counterfactual</div>';
+            }
+        }
+
+        // Slideshow content for each XAI method
+        const slideshowContent = {
+            shap: {
+                title: 'SHAP (SHapley Additive exPlanations)',
+                slides: [
+                    {
+                        title: 'What is SHAP?',
+                        content: `
+                            <div class="visual-diagram">
+                                <div class="visual-row">
+                                    <div class="visual-box light">📊 Features</div>
+                                    <div class="visual-arrow">→</div>
+                                    <div class="visual-box">SHAP</div>
+                                    <div class="visual-arrow">→</div>
+                                    <div class="visual-box light">💡 Explanation</div>
+                                </div>
+                            </div>
+                            <div class="highlight">
+                                <strong>🎯 Key Idea:</strong> SHAP values tell you how much each feature "pushed" the model's prediction up or down from a baseline (average) prediction.
+                            </div>
+                            <p>SHAP is based on <strong>game theory</strong> 🎲 — it treats features like players in a team, fairly distributing credit for the prediction.</p>
+                        `
+                    },
+                    {
+                        title: 'How SHAP Values Are Computed',
+                        content: `
+                            <div class="visual-diagram">
+                                <div class="visual-row" style="margin-bottom: 15px;">
+                                    <div style="text-align: center; flex: 1;">
+                                        <div class="step-number-circle">1</div><strong>Baseline</strong>
+                                        <div class="mini-chart" style="margin: 10px auto;">
+                                            <div class="mini-bar"><div class="mini-bar-fill" style="width: 50%"></div></div>
+                                        </div>
+                                    </div>
+                                    <div class="visual-arrow">→</div>
+                                    <div style="text-align: center; flex: 1;">
+                                        <div class="step-number-circle">2</div><strong>Test Features</strong>
+                                        <div style="font-size: 11px; color: #666; margin-top: 8px;">With vs Without</div>
+                                    </div>
+                                    <div class="visual-arrow">→</div>
+                                    <div style="text-align: center; flex: 1;">
+                                        <div class="step-number-circle">3</div><strong>Contribution</strong>
+                                        <div class="color-bar" style="margin: 10px auto; height: 16px;">
+                                            <div class="color-segment" style="background: #dc3545; flex: 2; font-size: 10px;">-</div>
+                                            <div class="color-segment" style="background: #6c757d; flex: 1; font-size: 10px;">0</div>
+                                            <div class="color-segment" style="background: #007bff; flex: 3; font-size: 10px;">+</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p style="text-align: center; color: #666; margin-top: 15px; font-size: 13px;"><em>🌲 Uses optimized Tree SHAP for Random Forests</em></p>
+                        `
+                    },
+                    {
+                        title: 'Interpreting SHAP Values',
+                        content: `
+                            <div class="visual-grid">
+                                <div class="visual-card" style="border-left-color: #007bff;">
+                                    <span class="visual-icon">🔵</span>
+                                    <strong>Positive Value</strong>
+                                    <p style="margin: 10px 0 0 0; font-size: 13px; color: #666;">Feature <strong>increased</strong> probability</p>
+                                    <div class="mini-chart" style="margin-top: 10px;">
+                                        <div class="mini-bar"><div class="mini-bar-fill" style="width: 80%; background: #007bff;"></div></div>
+                                    </div>
+                                </div>
+                                <div class="visual-card" style="border-left-color: #dc3545;">
+                                    <span class="visual-icon">🔴</span>
+                                    <strong>Negative Value</strong>
+                                    <p style="margin: 10px 0 0 0; font-size: 13px; color: #666;">Feature <strong>decreased</strong> probability</p>
+                                    <div class="mini-chart" style="margin-top: 10px;">
+                                        <div class="mini-bar"><div class="mini-bar-fill" style="width: 65%; background: #dc3545;"></div></div>
+                                    </div>
+                                </div>
+                                <div class="visual-card" style="border-left-color: #6c757d;">
+                                    <span class="visual-icon">⚪</span>
+                                    <strong>Near-Zero Value</strong>
+                                    <p style="margin: 10px 0 0 0; font-size: 13px; color: #666;">Feature had <strong>minimal</strong> impact</p>
+                                    <div class="mini-chart" style="margin-top: 10px;">
+                                        <div class="mini-bar"><div class="mini-bar-fill" style="width: 5%; background: #6c757d;"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="highlight" style="margin-top: 20px;">
+                                <strong>💡 Remember:</strong> Larger bars = bigger impact on this prediction
+                            </div>
+                        `
+                    },
+                    {
+                        title: 'Why SHAP Values Matter',
+                        content: `
+                            <div class="visual-grid">
+                                <div class="visual-card">
+                                    <span class="visual-icon">🎯</span>
+                                    <strong>Local Explanations</strong>
+                                    <p style="margin: 8px 0 0 0; font-size: 13px; color: #666;">Explains <em>this specific</em> prediction</p>
+                                </div>
+                                <div class="visual-card">
+                                    <span class="visual-icon">🔬</span>
+                                    <strong>Consistency</strong>
+                                    <p style="margin: 8px 0 0 0; font-size: 13px; color: #666;">Solid mathematical foundation</p>
+                                </div>
+                                <div class="visual-card">
+                                    <span class="visual-icon">✅</span>
+                                    <strong>Accuracy</strong>
+                                    <p style="margin: 8px 0 0 0; font-size: 13px; color: #666;">Values add up correctly</p>
+                                </div>
+                                <div class="visual-card">
+                                    <span class="visual-icon">📏</span>
+                                    <strong>Comparability</strong>
+                                    <p style="margin: 8px 0 0 0; font-size: 13px; color: #666;">Easy to interpret units</p>
+                                </div>
+                            </div>
+                            <div class="visual-diagram" style="margin-top: 30px;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 20px; font-weight: bold; color: #667eea; margin-bottom: 15px;">🤝 For Decision Making</div>
+                                    <p style="font-size: 15px; line-height: 1.8; color: #333;">SHAP helps you <strong>trust or question</strong> predictions by showing which features drove the decision and by how much.</p>
+                                </div>
+                            </div>
+                        `
+                    }
+                ]
+            },
+            lime: {
+                title: 'LIME (Local Interpretable Model-agnostic Explanations)',
+                slides: [
+                    {
+                        title: 'What is LIME?',
+                        content: `
+                            <div class="visual-diagram">
+                                <div class="visual-row">
+                                    <div class="visual-box" style="background: #333;">🎭 Complex Model</div>
+                                    <div class="visual-arrow">→</div>
+                                    <div class="visual-box light">🔍 Local Area</div>
+                                    <div class="visual-arrow">→</div>
+                                    <div class="visual-box">📐 Simple Linear Model</div>
+                                </div>
+                            </div>
+                            <div class="highlight">
+                                <strong>🎯 Key Idea:</strong> Even if the global model is complex, locally around any prediction it can be approximated by a simple linear model.
+                            </div>
+                            <p style="text-align: center;"><strong>🔓 Model-Agnostic</strong> — Works with ANY machine learning model!</p>
+                        `
+                    },
+                    {
+                        title: 'How LIME Works',
+                        content: `
+                            <div class="visual-diagram">
+                                <div class="visual-row" style="align-items: flex-start;">
+                                    <div style="text-align: center; flex: 1;">
+                                        <div class="step-number-circle">1</div><strong style="font-size: 13px;">Original</strong>
+                                        <div class="visual-box light" style="margin-top: 8px; padding: 8px; font-size: 12px;">📍</div>
+                                    </div>
+                                    <div class="visual-arrow">→</div>
+                                    <div style="text-align: center; flex: 1;">
+                                        <div class="step-number-circle">2</div><strong style="font-size: 13px;">Variations</strong>
+                                        <div style="margin-top: 8px; font-size: 18px;">📍📍📍📍</div>
+                                    </div>
+                                    <div class="visual-arrow">→</div>
+                                    <div style="text-align: center; flex: 1;">
+                                        <div class="step-number-circle">3</div><strong style="font-size: 13px;">Weight</strong>
+                                        <div class="mini-bar" style="margin: 10px auto; height: 10px;"><div class="mini-bar-fill" style="width: 90%;"></div></div>
+                                    </div>
+                                    <div class="visual-arrow">→</div>
+                                    <div style="text-align: center; flex: 1;">
+                                        <div class="step-number-circle">4</div><strong style="font-size: 13px;">Linear Model</strong>
+                                        <div style="margin-top: 8px; font-size: 20px;">📐</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p style="text-align: center; color: #666; margin-top: 12px; font-size: 13px;">Fit simple model → Coefficients = Feature Importance</p>
+                        `
+                    },
+                    {
+                        title: 'Interpreting LIME Values',
+                        content: `
+                            <p>LIME produces coefficients that show each feature's contribution to the prediction:</p>
+                            <div class="example">
+                                <strong>Positive Value (Blue):</strong>
+                                <p>This feature <em>supports</em> the predicted class. The higher the value, the more it pushes toward this classification.</p>
+                            </div>
+                            <div class="example">
+                                <strong>Negative Value (Red):</strong>
+                                <p>This feature <em>opposes</em> the predicted class. It pushes against this classification.</p>
+                            </div>
+                            <p><strong>Important:</strong> LIME values are approximate and focus on the local neighborhood around this specific prediction.</p>
+                        `
+                    },
+                    {
+                        title: 'Why LIME Is Useful',
+                        content: `
+                            <p>LIME provides valuable insights because it:</p>
+                            <ul>
+                                <li><strong>Works Anywhere:</strong> Model-agnostic approach works with any classifier (neural networks, random forests, etc.)</li>
+                                <li><strong>Simple Explanations:</strong> Uses linear models that humans can easily understand</li>
+                                <li><strong>Local Fidelity:</strong> Accurate in the neighborhood of the prediction, even if the global model is complex</li>
+                                <li><strong>Feature Selection:</strong> Shows which features matter most for this specific instance</li>
+                            </ul>
+                            <div class="highlight">
+                                <strong>For Decision Making:</strong> LIME helps you understand which features the model relied on for this prediction, building trust or identifying potential issues.
+                            </div>
+                            <p><small><em>Note: LIME explanations can vary between runs due to randomness in the perturbation process.</em></small></p>
+                        `
+                    }
+                ]
+            },
+            mdi: {
+                title: 'MDI (Mean Decrease in Impurity)',
+                slides: [
+                    {
+                        title: 'What is MDI?',
+                        content: `
+                            <div class="visual-diagram" style="padding: 15px; margin: 15px 0;">
+                                <div class="visual-row" style="margin-bottom: 8px;">
+                                    <div class="visual-box light" style="font-size: 11px; padding: 6px 12px;">🌳 Tree 1</div>
+                                    <div class="visual-box light" style="font-size: 11px; padding: 6px 12px;">🌳 Tree 2</div>
+                                    <div class="visual-box light" style="font-size: 11px; padding: 6px 12px;">🌳 Tree N</div>
+                                </div>
+                                <div class="visual-arrow" style="text-align: center; margin: 5px 0;">↓</div>
+                                <div style="text-align: center;">
+                                    <div class="visual-box" style="padding: 8px 18px; font-size: 12px;">🎯 Global Importance</div>
+                                </div>
+                            </div>
+                            <div class="highlight" style="padding: 8px 12px; margin: 10px 0;">
+                                <strong style="font-size: 13px;">🎯 Key:</strong> <span style="font-size: 12px;">Features that create "pure" splits are more important</span>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <div class="visual-card" style="flex: 1; text-align: center; padding: 8px;">
+                                    <strong style="font-size: 12px;">SHAP/LIME</strong>
+                                    <p style="margin: 3px 0 0 0; font-size: 11px;">🎯 Instance</p>
+                                </div>
+                                <div class="visual-card" style="flex: 1; text-align: center; padding: 8px;">
+                                    <strong style="font-size: 12px;">MDI</strong>
+                                    <p style="margin: 3px 0 0 0; font-size: 11px;">🌍 Global</p>
+                                </div>
+                            </div>
+                        `
+                    },
+                    {
+                        title: 'How MDI Is Calculated',
+                        content: `
+                            <p>MDI is computed during the training of the Random Forest:</p>
+                            <ul>
+                                <li><strong>Step 1:</strong> For each split in each tree, calculate the impurity decrease</li>
+                                <li><strong>Step 2:</strong> Impurity decrease = (samples at node) × (impurity before split - weighted impurity after split)</li>
+                                <li><strong>Step 3:</strong> Sum all impurity decreases for each feature across all trees</li>
+                                <li><strong>Step 4:</strong> Normalize by the total number of trees</li>
+                            </ul>
+                            <div class="formula">
+                                MDI(feature) = Σ [impurity decrease when splitting on feature] / n_trees
+                            </div>
+                            <p><strong>Impurity Measures:</strong> Typically Gini impurity for classification or variance for regression.</p>
+                        `
+                    },
+                    {
+                        title: 'Interpreting MDI Values',
+                        content: `
+                            <p>MDI values tell you about global feature importance:</p>
+                            <div class="example">
+                                <strong>High MDI Value:</strong>
+                                <p>This feature is frequently used for splitting and creates pure groups. It's globally important across many predictions.</p>
+                            </div>
+                            <div class="example">
+                                <strong>Low MDI Value:</strong>
+                                <p>This feature is rarely used or doesn't create meaningful splits. It has low predictive power globally.</p>
+                            </div>
+                            <div class="highlight">
+                                <strong>Remember:</strong> MDI shows <em>average</em> importance across all predictions, not importance for this specific instance.
+                            </div>
+                        `
+                    },
+                    {
+                        title: 'Why MDI Matters',
+                        content: `
+                            <p>MDI is valuable for understanding your model because it:</p>
+                            <ul>
+                                <li><strong>Fast Computation:</strong> Calculated during training, no additional cost</li>
+                                <li><strong>Global View:</strong> Shows which features matter most across the entire model</li>
+                                <li><strong>Built-in:</strong> Available directly from scikit-learn's Random Forest</li>
+                                <li><strong>Feature Selection:</strong> Helps identify which features can be removed</li>
+                            </ul>
+                            <div class="highlight">
+                                <strong>For Decision Making:</strong> MDI helps you understand the model's overall behavior and which features drive predictions in general, complementing instance-specific methods like SHAP and LIME.
+                            </div>
+                            <p><strong>Caveat:</strong> MDI can be biased toward high-cardinality features (features with many unique values).</p>
+                        `
+                    }
+                ]
+            },
+            path: {
+                title: 'Decision Path',
+                slides: [
+                    {
+                        title: 'What is Decision Path?',
+                        content: `
+                            <div class="visual-diagram" style="padding: 15px; margin: 15px 0;">
+                                <div style="text-align: center;">
+                                    <div class="visual-box light" style="padding: 6px 18px; margin-bottom: 5px; font-size: 12px;">🌳 Root</div>
+                                    <div class="visual-arrow" style="margin: 5px 0; font-size: 16px;">↓</div>
+                                    <div class="visual-card" style="margin: 0 auto; max-width: 220px; padding: 8px; border-left-color: #28a745;">
+                                        <strong style="font-size: 12px;">If Feature A ≤ 5</strong>
+                                        <p style="font-size: 10px; margin: 2px 0 0 0; color: #666;">⬅️ left</p>
+                                    </div>
+                                    <div class="visual-arrow" style="margin: 5px 0; font-size: 16px;">↓</div>
+                                    <div class="visual-card" style="margin: 0 auto; max-width: 220px; padding: 8px; border-left-color: #007bff;">
+                                        <strong style="font-size: 12px;">If Feature B > 10</strong>
+                                        <p style="font-size: 10px; margin: 2px 0 0 0; color: #666;">➡️ right</p>
+                                    </div>
+                                    <div class="visual-arrow" style="margin: 5px 0; font-size: 16px;">↓</div>
+                                    <div class="visual-box" style="background: #28a745; padding: 8px 18px; font-size: 12px;">✓ Prediction</div>
+                                </div>
+                            </div>
+                            <div class="highlight" style="margin-top: 10px; padding: 8px 12px;">
+                                <strong style="font-size: 13px;">🎯 Key:</strong> <span style="font-size: 12px;">Follow root to leaf with "if-then" rules</span>
+                            </div>
+                        `
+                    },
+                    {
+                        title: 'How Decision Path Works',
+                        content: `
+                            <div class="visual-grid" style="grid-template-columns: repeat(2, 1fr);">
+                                <div class="visual-card">
+                                    <div class="step-number-circle">1</div><strong style="font-size: 13px;">Trace Path</strong>
+                                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Root to leaf in each tree</p>
+                                </div>
+                                <div class="visual-card">
+                                    <div class="step-number-circle">2</div><strong style="font-size: 13px;">Record Nodes</strong>
+                                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Feature, threshold, direction</p>
+                                </div>
+                                <div class="visual-card">
+                                    <div class="step-number-circle">3</div><strong style="font-size: 13px;">Aggregate</strong>
+                                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Find common decisions</p>
+                                </div>
+                                <div class="visual-card">
+                                    <div class="step-number-circle">4</div><strong style="font-size: 13px;">Rank</strong>
+                                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">By information gain</p>
+                                </div>
+                            </div>
+                            <div class="highlight" style="margin-top: 15px; padding: 10px 15px;">
+                                Shows <strong>top 10 decisions</strong> with highest information gain
+                            </div>
+                        `
+                    },
+                    {
+                        title: 'Interpreting Decision Steps',
+                        content: `
+                            <div class="visual-grid">
+                                <div class="visual-card" style="border-left-color: #667eea;">
+                                    <span class="visual-icon" style="font-size: 24px;">📋</span>
+                                    <strong style="font-size: 13px;">Condition</strong>
+                                    <p style="margin: 5px 0 0 0; font-size: 11px; color: #666;">If Feature ≤ or > Threshold</p>
+                                </div>
+                                <div class="visual-card" style="border-left-color: #28a745;">
+                                    <span class="visual-icon" style="font-size: 24px;">📊</span>
+                                    <strong style="font-size: 13px;">Info Gain</strong>
+                                    <p style="margin: 5px 0 0 0; font-size: 11px; color: #666;">Uncertainty reduced</p>
+                                </div>
+                                <div class="visual-card" style="border-left-color: #007bff;">
+                                    <span class="visual-icon" style="font-size: 24px;">🤝</span>
+                                    <strong style="font-size: 13px;">Support %</strong>
+                                    <p style="margin: 5px 0 0 0; font-size: 11px; color: #666;">Tree agreement level</p>
+                                </div>
+                            </div>
+                            <div class="highlight" style="margin-top: 15px; padding: 10px 15px;">
+                                Higher info gain = more critical decision. Higher support = more consensus.
+                            </div>
+                        `
+                    },
+                    {
+                        title: 'Why Decision Path Is Important',
+                        content: `
+                            <p>Decision Path provides unique insights:</p>
+                            <ul>
+                                <li><strong>Transparent Reasoning:</strong> See the exact rules the model followed</li>
+                                <li><strong>Interpretable Logic:</strong> Easy to explain to non-technical stakeholders ("if X > Y, then...")</li>
+                                <li><strong>Debugging:</strong> Identify if the model is using unexpected features or thresholds</li>
+                                <li><strong>Trust Building:</strong> Verify the logic makes domain sense</li>
+                            </ul>
+                            <div class="highlight">
+                                <strong>For Decision Making:</strong> Decision Path shows the "why" behind a prediction in the most human-readable form - a sequence of logical conditions.
+                            </div>
+                            <p>Unlike aggregate importance measures, this shows what <em>actually happened</em> for this specific prediction.</p>
+                        `
+                    }
+                ]
+            },
+            counterfactual: {
+                title: 'Counterfactual Analysis',
+                slides: [
+                    {
+                        title: 'What is Counterfactual Analysis?',
+                        content: `
+                            <div class="visual-diagram">
+                                <div class="visual-row">
+                                    <div class="visual-box light">📊 Current<br>Class A (80%)</div>
+                                    <div class="visual-arrow" style="font-size: 24px;">→<br><span style="font-size: 12px;">change?</span></div>
+                                    <div class="visual-box">🎯 Target<br>Class B (80%)</div>
+                                </div>
+                                <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f0e6ff; border-radius: 10px;">
+                                    <strong style="color: #667eea; font-size: 16px;">❓ What's the MINIMUM change needed?</strong>
+                                </div>
+                            </div>
+                            <div class="highlight" style="margin-top: 20px;">
+                                <strong>🎯 Key Idea:</strong> Find the smallest changes to input features that would flip the prediction to a different class.
+                            </div>
+                            <p style="text-align: center; margin-top: 15px;"><strong>💡 Focus:</strong> Actionable insights — what you could change to get a different outcome</p>
+                        `
+                    },
+                    {
+                        title: 'How Counterfactuals Are Found',
+                        content: `
+                            <p>The system searches for minimal changes that alter the prediction:</p>
+                            <ul>
+                                <li><strong>Step 1:</strong> Start with the original instance and its prediction</li>
+                                <li><strong>Step 2:</strong> For each feature individually, try small perturbations (increases/decreases)</li>
+                                <li><strong>Step 3:</strong> Find the minimum change to that feature that flips the prediction across the 50% confidence threshold</li>
+                                <li><strong>Step 4:</strong> Record the required change amount and direction</li>
+                                <li><strong>Step 5:</strong> Rank features by the size of change needed (smallest changes = most sensitive features)</li>
+                            </ul>
+                            <p>The goal is to find <strong>realistic, minimal changes</strong> rather than arbitrary large modifications.</p>
+                        `
+                    },
+                    {
+                        title: 'Interpreting Counterfactual Results',
+                        content: `
+                            <div class="visual-grid">
+                                <div class="visual-card" style="border-left-color: #dc3545;">
+                                    <span class="visual-icon" style="font-size: 24px;">⚠️</span>
+                                    <strong style="font-size: 13px;">Small Change</strong>
+                                    <p style="margin: 5px 0; font-size: 13px; color: #dc3545;">↑ 0.05</p>
+                                    <p style="margin: 0; font-size: 11px; color: #666;">Very sensitive</p>
+                                </div>
+                                <div class="visual-card" style="border-left-color: #ffc107;">
+                                    <span class="visual-icon" style="font-size: 24px;">🔔</span>
+                                    <strong style="font-size: 13px;">Large Change</strong>
+                                    <p style="margin: 5px 0; font-size: 13px; color: #ffc107;">↑ 5.0</p>
+                                    <p style="margin: 0; font-size: 11px; color: #666;">Less sensitive</p>
+                                </div>
+                            </div>
+                            <div class="highlight" style="margin-top: 15px; padding: 10px 15px;">
+                                <strong>Direction:</strong> ↑ = increase, ↓ = decrease feature value to flip prediction
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: center;">
+                                <div class="visual-box light" style="padding: 8px 15px; font-size: 12px;">
+                                    <span style="font-size: 20px; color: #28a745;">↑</span> Increase
+                                </div>
+                                <div class="visual-box light" style="padding: 8px 15px; font-size: 12px;">
+                                    <span style="font-size: 20px; color: #dc3545;">↓</span> Decrease
+                                </div>
+                            </div>
+                        `
+                    },
+                    {
+                        title: 'Why Counterfactuals Matter',
+                        content: `
+                            <p>Counterfactual explanations are powerful because they:</p>
+                            <ul>
+                                <li><strong>Actionable Insights:</strong> Show exactly what to change, not just what was important</li>
+                                <li><strong>Robustness Testing:</strong> Reveal how stable/fragile the prediction is</li>
+                                <li><strong>Bias Detection:</strong> Can expose if small changes to sensitive features (age, gender, etc.) flip predictions inappropriately</li>
+                                <li><strong>Human-Friendly:</strong> Answers "what if?" questions naturally</li>
+                            </ul>
+                            <div class="highlight">
+                                <strong>For Decision Making:</strong> Counterfactuals help you understand prediction boundaries and model sensitivity, critical for assessing confidence and identifying potential issues.
+                            </div>
+                            <p><strong>Use Case:</strong> "If this feature increased by X, the classification would change" - directly actionable information.</p>
+                        `
+                    }
+                ]
+            }
+        };
+
+        function openSlideshow(type) {
+            currentSlideshowType = type;
+            currentSlideIndex = 0;
+
+            const content = slideshowContent[type];
+            if (!content) return;
+
+            // Set title
+            document.getElementById('slideshowTitle').textContent = content.title;
+
+            // Build slides
+            const slideshowBody = document.getElementById('slideshowBody');
+            slideshowBody.innerHTML = '';
+
+            content.slides.forEach((slide, index) => {
+                const slideDiv = document.createElement('div');
+                slideDiv.className = 'slide' + (index === 0 ? ' active' : '');
+                slideDiv.innerHTML = `
+                    <div class="slide-content">
+                        <h3>${slide.title}</h3>
+                        ${slide.content}
+                    </div>
+                `;
+                slideshowBody.appendChild(slideDiv);
+            });
+
+            // Update counter
+            document.getElementById('totalSlides').textContent = content.slides.length;
+            document.getElementById('currentSlideNum').textContent = '1';
+
+            // Show modal
+            document.getElementById('slideshowModal').classList.add('active');
+
+            // Update navigation buttons
+            updateNavButtons();
+        }
+
+        function closeSlideshow() {
+            document.getElementById('slideshowModal').classList.remove('active');
+        }
+
+        function changeSlide(direction) {
+            const content = slideshowContent[currentSlideshowType];
+            if (!content) return;
+
+            const slides = document.querySelectorAll('.slide');
+            slides[currentSlideIndex].classList.remove('active');
+
+            currentSlideIndex += direction;
+
+            // Clamp to valid range
+            if (currentSlideIndex < 0) currentSlideIndex = 0;
+            if (currentSlideIndex >= slides.length) currentSlideIndex = slides.length - 1;
+
+            slides[currentSlideIndex].classList.add('active');
+
+            // Update counter
+            document.getElementById('currentSlideNum').textContent = currentSlideIndex + 1;
+
+            // Update buttons
+            updateNavButtons();
+
+            // Scroll to top of slide
+            document.getElementById('slideshowBody').scrollTop = 0;
+        }
+
+        function updateNavButtons() {
+            const content = slideshowContent[currentSlideshowType];
+            if (!content) return;
+
+            const prevBtn = document.getElementById('prevSlide');
+            const nextBtn = document.getElementById('nextSlide');
+            const body = document.getElementById('slideshowBody');
+
+            prevBtn.disabled = currentSlideIndex === 0;
+            nextBtn.disabled = currentSlideIndex === content.slides.length - 1;
+
+            // Update body classes for visual feedback
+            if (currentSlideIndex === 0) {
+                body.classList.add('no-prev');
+            } else {
+                body.classList.remove('no-prev');
+            }
+
+            if (currentSlideIndex === content.slides.length - 1) {
+                body.classList.add('no-next');
+            } else {
+                body.classList.remove('no-next');
+            }
+        }
+
+        // Close modal on outside click
+        document.getElementById('slideshowModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSlideshow();
+            }
+        });
+
+        // Click navigation on slideshow body
+        document.getElementById('slideshowBody').addEventListener('click', function(e) {
+            const rect = this.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const width = rect.width;
+
+            // Left third = previous, right third = next, middle third = do nothing (for scrolling)
+            if (clickX < width * 0.33) {
+                changeSlide(-1);
+            } else if (clickX > width * 0.67) {
+                changeSlide(1);
+            }
+        });
+
+        // Hover effect for click zones
+        document.getElementById('slideshowBody').addEventListener('mousemove', function(e) {
+            const rect = this.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const width = rect.width;
+
+            this.classList.remove('hover-left', 'hover-right');
+
+            if (mouseX < width * 0.33 && currentSlideIndex > 0) {
+                this.classList.add('hover-left');
+            } else if (mouseX > width * 0.67) {
+                const content = slideshowContent[currentSlideshowType];
+                if (content && currentSlideIndex < content.slides.length - 1) {
+                    this.classList.add('hover-right');
+                }
+            }
+        });
+
+        document.getElementById('slideshowBody').addEventListener('mouseleave', function() {
+            this.classList.remove('hover-left', 'hover-right');
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            const modal = document.getElementById('slideshowModal');
+            if (!modal.classList.contains('active')) return;
+
+            if (e.key === 'Escape') {
+                closeSlideshow();
+            } else if (e.key === 'ArrowLeft') {
+                changeSlide(-1);
+            } else if (e.key === 'ArrowRight') {
+                changeSlide(1);
+            }
+        });
+    </script>
+</body>
+</html>
