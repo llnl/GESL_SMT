@@ -1,4 +1,4 @@
-# GESL - Grid Event Signature Library
+# Grid Event Signature Library's Signature Matching Tool (GESL SMT with XAI)
 
 Hierarchical classification system for power grid event signatures with explainable AI (XAI) methods.
 
