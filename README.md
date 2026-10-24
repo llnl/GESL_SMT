@@ -62,19 +62,22 @@ Look at the `no_app.py` for standalone usage examples.
 
 ## Data Format
 
-Input CSV files should contain:
-- Columns 0-4: Metadata (Sig_ID, primary, secondary, tertiary, etc.)
-- Columns 5+: Feature columns (23 statistical features from PMU signals)
+**For server.py (File Upload):**
 
-Expected features (excluding P001.df_mean):
+Input CSV files must be **raw PMU time-series data** with the following columns:
 ```
-P001.df_std, P001.df_skew, P001.df_kurtosis,
-P001.f_mean, P001.f_std, P001.f_skew, P001.f_kurtosis,
-P001.ip_a_mean, P001.ip_a_std, P001.ip_a_skew, P001.ip_a_kurtosis,
-P001.ip_m_mean, P001.ip_m_std, P001.ip_m_skew, P001.ip_m_kurtosis,
-P001.vp_a_mean, P001.vp_a_std, P001.vp_a_skew, P001.vp_a_kurtosis,
-P001.vp_m_mean, P001.vp_m_std, P001.vp_m_skew, P001.vp_m_kurtosis
+Time, P001.df, P001.f, P001.ip_a, P001.ip_m, P001.vp_a, P001.vp_m
 ```
+
+The server automatically computes the 23 statistical features from this raw data.
+
+**Sample file:** `Data/sample_pmu_raw.csv` - Use this as a template for your uploads.
+
+**For demo_server.py:**
+
+Uses pre-computed features from `Data/pmu_transmission_features.csv` (training data format):
+- Columns 0-4: Metadata (sigid, primary, secondary, tertiary, etc.)
+- Columns 5+: 23 pre-computed statistical features (excluding P001.df_mean)
 
 ## Documentation
 
