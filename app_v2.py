@@ -258,15 +258,22 @@ Classification Level: {level}
 Predicted Label: {label}
 """
 
+        # Check for OpenAI API key
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key or api_key == "your-api-key-here":
+            return jsonify({
+                "summary": "LLM summary disabled: set OPENAI_API_KEY environment variable to enable AI-generated explanations."
+            }), 200
+
         system_prompt = "You are an expert at interpreting explainability results for domain experts with no XAI background. Follow the template exactly."
 
         client = OpenAI(
-            api_key=os.getenv("OPENAI_API_KEY", "your-api-key-here"),
+            api_key=api_key,
             base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
         )
 
         response = client.chat.completions.create(
-            model="gpt-5-mini",
+            model="gpt-4o-mini",
             messages=[{"role":"system", "content":f"{system_prompt}"},
                       {"role": "user", "content": f"{user_prompt}"},],
         )
@@ -687,8 +694,8 @@ def get_explanations(level, label):
         for step in path_list:
             if isinstance(step, dict):
                 feature_name = step.get('feature_name', 'Unknown')
-                threshold = step.get('avg_value', 0)  # avg_value IS the threshold
-                actual_value = sample_feature_values.get(feature_name, 0)  # Get actual input value
+                threshold = step.get('avg_threshold', 0)  # Use avg_threshold for correct split threshold
+                actual_value = step.get('avg_value', 0)  # avg_value is the actual feature value
                 direction = 'left' if actual_value <= threshold else 'right'
 
                 path_steps.append({

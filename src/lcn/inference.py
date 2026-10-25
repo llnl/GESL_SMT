@@ -80,6 +80,7 @@ def merge_forest_paths(model, test_features, feature_names=None):
     for depth in range(max_depth):
         depth_feats = []
         depth_values = defaultdict(list)
+        depth_thresholds = defaultdict(list)
         depth_gains = defaultdict(list)
 
         for steps in per_tree_steps:
@@ -88,6 +89,7 @@ def merge_forest_paths(model, test_features, feature_names=None):
                 f = step["feature_id"]
                 depth_feats.append(f)
                 depth_values[f].append(step["value"])
+                depth_thresholds[f].append(step["threshold"])
                 if step["gain"] is not None:
                     depth_gains[f].append(step["gain"])
             else:
@@ -99,11 +101,13 @@ def merge_forest_paths(model, test_features, feature_names=None):
             total = len(valid_feats)
             support_pct = 100.0 * count / total
             avg_value = float(np.mean(depth_values[common_feat]))
+            avg_threshold = float(np.mean(depth_thresholds[common_feat]))
             avg_gain = float(np.mean(depth_gains[common_feat])) if depth_gains[common_feat] else None
         else:
             common_feat = -1
             support_pct = 0.0
             avg_value = None
+            avg_threshold = None
             avg_gain = None
 
         merged.append({
@@ -112,6 +116,7 @@ def merge_forest_paths(model, test_features, feature_names=None):
             "feature_name": feature_names[common_feat] if feature_names and common_feat != -1 else common_feat,
             "support_pct": support_pct,
             "avg_value": avg_value,
+            "avg_threshold": avg_threshold,
             "avg_gain": avg_gain,
         })
 
@@ -252,10 +257,12 @@ def successive_binary_classifier(
                 mdis[evttag] = np.zeros(len(FEATURE_NAMES))
 
             # Decision path explanations
+            # Use 23 feature names (excluding P001.df_mean) to match training data
+            actual_feature_names = [f for f in FEATURE_NAMES if f != 'P001.df_mean']
             merged_paths[evttag] = merge_forest_paths(
                 model,
                 test_features,
-                feature_names=FEATURE_NAMES
+                feature_names=actual_feature_names
             )
 
             items = [s for s in merged_paths[evttag] if s["avg_gain"] is not None]

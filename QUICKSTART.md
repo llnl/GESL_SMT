@@ -20,6 +20,12 @@ clean_implementation/
 
 ## Installation
 
+0. **Install Git LFS and download models**
+   ```bash
+   git lfs install
+   git lfs pull
+   ```
+
 1. **Create virtual environment**
    ```bash
    python -m venv venv
@@ -45,9 +51,9 @@ clean_implementation/
 ```bash
 python demo_server.py
 ```
-- Server starts on `http://localhost:5001`
+- Regenerates `xai.json` with predictions from the first training sample
 - Open `viewer.html` in your browser
-- Click "LOAD DEMO" button
+- Click "LOAD DEMO" button to load the pre-computed results
 - Explore the hierarchical classifications and XAI explanations
 
 ### Option 2: Upload Mode (Your Own Data)

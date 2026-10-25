@@ -2,9 +2,16 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 import pandas as pd
 import json
+import glob
+import os
 
 
 current_results = {}
+
+# Check for Git LFS pointer files
+small = [p for p in glob.glob("Classifiers/*.pickle") if os.path.getsize(p) < 1000]
+if small:
+    raise SystemExit(f"{len(small)} classifier files are Git LFS pointers. Run: git lfs install && git lfs pull")
 
 from src.lcn.config import ModelConfig, PipelineConfig, ResamplingConfig
 from src.lcn.data_io import load_inputs

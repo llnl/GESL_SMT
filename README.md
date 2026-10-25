@@ -28,7 +28,13 @@ GESL/
 
 ## Installation
 
+**Requirements:** Git LFS must be installed to download the trained model files.
+
 ```bash
+# Install Git LFS and download model files
+git lfs install
+git lfs pull
+
 # Create virtual environment
 python -m venv venv
 
@@ -50,11 +56,11 @@ python server.py
 ```
 Then open `viewer.html` in your browser and upload your CSV file.
 
-#### Demo Server (Pre-loaded Data)
+#### Demo Mode (Pre-computed Results)
 ```bash
 python demo_server.py
 ```
-Then open `viewer.html` in your browser to view pre-loaded event classifications.
+This regenerates `xai.json` with predictions and XAI explanations from the first sample in the training data. Then open `viewer.html` in your browser and click "LOAD DEMO" to view the pre-computed classifications.
 
 #### No Server
 
