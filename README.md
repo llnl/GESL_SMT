@@ -20,7 +20,7 @@ GESL/
 │       └── ...
 ├── server.py            # Flask server with file upload support
 ├── demo_server.py       # Demo server with pre-loaded data
-├── viewer.html          # Interactive web viewer with XAI methods
+├── viewer_v2.html          # Interactive web viewer with XAI methods
 ├── Data/                # Training data
 ├── Classifiers/         # Trained model files
 └── Uploads/             # User-uploaded files
@@ -54,13 +54,13 @@ pip install -r requirements.txt
 ```bash
 python server.py
 ```
-Then open `viewer.html` in your browser and upload your CSV file.
+Then open `viewer_v2.html` in your browser and upload your CSV file.
 
 #### Demo Mode (Pre-computed Results)
 ```bash
 python demo_server.py
 ```
-This regenerates `xai.json` with predictions and XAI explanations from the first sample in the training data. Then open `viewer.html` in your browser and click "LOAD DEMO" to view the pre-computed classifications.
+This regenerates `xai.json` with predictions and XAI explanations from the first sample in the training data. Then open `viewer_v2.html` in your browser and click "LOAD DEMO" to view the pre-computed classifications.
 
 #### No Server
 

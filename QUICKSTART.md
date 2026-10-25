@@ -9,7 +9,7 @@ clean_implementation/
 ├── src/lcn/              # Core classification library (11 modules)
 ├── server.py             # Flask server with file upload
 ├── demo_server.py        # Demo server with pre-loaded data
-├── viewer.html           # Interactive web UI with 5 XAI methods
+├── viewer_v2.html           # Interactive web UI with 5 XAI methods
 ├── Data/                 # Training data
 ├── Classifiers/          # Pre-trained models
 ├── Uploads/              # User uploads directory
@@ -52,7 +52,7 @@ clean_implementation/
 python demo_server.py
 ```
 - Regenerates `xai.json` with predictions from the first training sample
-- Open `viewer.html` in your browser
+- Open `viewer_v2.html` in your browser
 - Click "LOAD DEMO" button to load the pre-computed results
 - Explore the hierarchical classifications and XAI explanations
 
@@ -61,7 +61,7 @@ python demo_server.py
 python server.py
 ```
 - Server starts on `http://localhost:5001`
-- Open `viewer.html` in your browser
+- Open `viewer_v2.html` in your browser
 - Upload your CSV file (must have 23 features)
 - View predictions and explanations
 
@@ -92,10 +92,6 @@ Each method has an info button (?) that opens an interactive slideshow explainin
 ### Import Paths
 - **Before**: `from GESL_DIEGO.lcn.config import ...`
 - **After**: `from src.lcn.config import ...`
-
-### File Names
-- **Before**: `app_v2.py`, `no_app.py`, `viewer_v2.html`
-- **After**: `server.py`, `demo_server.py`, `viewer.html`
 
 ## Next Steps for GitHub
 

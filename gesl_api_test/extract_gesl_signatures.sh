@@ -1,6 +1,6 @@
  # Set these variables
-EMAIL='annalicia1@llnl.gov'
-APIKEY='8be45ecf-6f2e-4906-8fd5-25ca37af82de'
+EMAIL='YOUR_EMAIL@example.com'
+APIKEY='YOUR_API_KEY_HERE'
 
 if [ $# -ne 1 ]
 then

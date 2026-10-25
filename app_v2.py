@@ -6,6 +6,7 @@ import dice_ml
 import os
 import re
 import json
+import glob
 from openai import OpenAI
 
 # Import existing infrastructure
@@ -16,6 +17,10 @@ from sklearn.ensemble import RandomForestClassifier
 
 FEATURE_NAMES = ["P001.df_mean","P001.df_std","P001.df_skew","P001.df_kurtosis","P001.f_mean","P001.f_std","P001.f_skew","P001.f_kurtosis","P001.ip_a_mean",'P001.ip_a_std','P001.ip_a_skew','P001.ip_a_kurtosis','P001.ip_m_mean','P001.ip_m_std','P001.ip_m_skew','P001.ip_m_kurtosis','P001.vp_a_mean','P001.vp_a_std','P001.vp_a_skew','P001.vp_a_kurtosis','P001.vp_m_mean','P001.vp_m_std','P001.vp_m_skew','P001.vp_m_kurtosis']
 
+# Fail fast if the model files are Git LFS pointers instead of real pickles
+small = [p for p in glob.glob("Classifiers/*.pickle") if os.path.getsize(p) < 1000]
+if small:
+    raise SystemExit(f"{len(small)} classifier files are Git LFS pointers. Run: git lfs install && git lfs pull")
 
 app = Flask(__name__)
 CORS(app)
@@ -53,6 +58,10 @@ def compute_features_from_raw(df_raw):
     # For each signal column: NORMALIZE FIRST, then compute statistics
     for col in df_raw.columns:
         values = df_raw[col].values
+
+        # Unwrap angle channels (columns ending in _a) to match training preprocessing
+        if col.endswith('_a'):
+            values = np.rad2deg(np.unwrap(np.deg2rad(values)))
 
         # Z-score normalization: (x - mean) / std
         # This matches how training data was preprocessed
@@ -343,6 +352,16 @@ def upload_file():
         df_raw = pd.read_csv(filepath)
         print(f"Raw data shape: {df_raw.shape}")
         print(f"Raw data columns: {list(df_raw.columns)}")
+
+        # Validate that this is raw PMU data, not pre-computed features
+        required = ['P001.df', 'P001.f', 'P001.ip_a', 'P001.ip_m', 'P001.vp_a', 'P001.vp_m']
+        missing = [c for c in required if c not in df_raw.columns]
+        if missing:
+            return jsonify({
+                "status": "error",
+                "message": f"This looks like a feature table, not raw PMU data. Expected columns {required}; "
+                           f"missing {missing}. Use Data/sample_pmu_raw.csv as a template."
+            }), 400
 
         # Compute features
         features_df = compute_features_from_raw(df_raw)
