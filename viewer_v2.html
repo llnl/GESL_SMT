@@ -3,9 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hierarchical Classification Viewer</title>
+    <title>GESL Signature Matching Tool</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
+        :root {
+            --accent: #2d6a4f;        /* pine */
+            --accent-dark: #1b4332;   /* deep forest */
+            --accent-mid: #40916c;
+            --accent-light: #e9f5ee;  /* selected-card tint */
+            --support: #2a78d6;       /* pushes toward the label  (data colour, not theme) */
+            --oppose: #eb6834;        /* pushes away from the label */
+            --ink: #1f2a24;
+            --muted: #5f6b65;
+            --grid: #e3e8e5;
+        }
         * {
             margin: 0;
             padding: 0;
@@ -14,7 +25,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -49,18 +60,18 @@
             padding: 15px 40px;
             font-size: 18px;
             font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             color: white;
             border: none;
             border-radius: 50px;
             cursor: pointer;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(45, 106, 79, 0.4);
             transition: all 0.3s ease;
         }
 
         .upload-button:hover, .load-button:hover {
             transform: scale(1.05);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
+            box-shadow: 0 8px 20px rgba(45, 106, 79, 0.6);
         }
 
         .demo-button {
@@ -123,13 +134,13 @@
         }
 
         .prediction-item:hover {
-            border-color: #764ba2;
+            border-color: var(--accent-dark);
             transform: translateX(5px);
         }
 
         .prediction-item.selected {
-            border-color: #764ba2;
-            background: #f0e6ff;
+            border-color: var(--accent-dark);
+            background: var(--accent-light);
         }
 
         .prediction-label {
@@ -143,7 +154,7 @@
 
         .prediction-confidence {
             font-size: 14px;
-            color: #667eea;
+            color: var(--accent);
             font-weight: bold;
         }
 
@@ -157,7 +168,7 @@
 
         .confidence-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-dark) 100%);
             border-radius: 10px;
             transition: width 0.5s ease;
         }
@@ -181,7 +192,7 @@
 
         .explanation-section.visible {
             opacity: 1;
-            max-height: 2000px;
+            max-height: none;
         }
 
         .explanation-header {
@@ -258,12 +269,12 @@
         }
 
         .chart-bars::-webkit-scrollbar-thumb {
-            background: #667eea;
+            background: var(--accent);
             border-radius: 10px;
         }
 
         .chart-bars::-webkit-scrollbar-thumb:hover {
-            background: #764ba2;
+            background: var(--accent-dark);
         }
 
         .feature-bar {
@@ -367,8 +378,8 @@
         }
 
         .xai-nav-button.active {
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            border-color: #667eea;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-dark) 100%);
+            border-color: var(--accent);
             color: white;
         }
 
@@ -386,7 +397,7 @@
             padding: 15px;
             background: #f8f9fa;
             border-radius: 10px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid var(--accent);
         }
 
         .xai-explanation-title {
@@ -413,7 +424,7 @@
             background: white;
             border-radius: 10px;
             padding: 20px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid var(--accent);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             transition: all 0.2s ease;
         }
@@ -434,7 +445,7 @@
             display: inline-block;
             width: 30px;
             height: 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             color: white;
             border-radius: 50%;
             text-align: center;
@@ -460,12 +471,12 @@
         }
 
         .path-step-feature {
-            color: #667eea;
+            color: var(--accent);
             font-weight: bold;
         }
 
         .path-step-value {
-            color: #764ba2;
+            color: var(--accent-dark);
             font-weight: bold;
         }
 
@@ -527,7 +538,7 @@
         }
 
         .slideshow-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             color: white;
             padding: 25px 30px;
             text-align: center;
@@ -606,7 +617,7 @@
 
         .slide-content h3 {
             font-size: 24px;
-            color: #667eea;
+            color: var(--accent);
             margin-bottom: 20px;
             font-weight: bold;
             text-align: center;
@@ -632,10 +643,10 @@
         }
 
         .slide-content .highlight {
-            background: #f0e6ff;
+            background: var(--accent-light);
             padding: 12px 18px;
             border-radius: 10px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid var(--accent);
             margin: 15px 0;
         }
 
@@ -660,11 +671,11 @@
 
         .visual-diagram {
             background: white;
-            border: 2px solid #667eea;
+            border: 2px solid var(--accent);
             border-radius: 12px;
             padding: 20px;
             margin: 20px 0;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+            box-shadow: 0 4px 12px rgba(45, 106, 79, 0.15);
         }
 
         .visual-row {
@@ -677,7 +688,7 @@
         }
 
         .visual-box {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             color: white;
             padding: 12px 20px;
             border-radius: 10px;
@@ -689,14 +700,14 @@
         }
 
         .visual-box.light {
-            background: #f0e6ff;
-            color: #667eea;
-            border: 2px solid #667eea;
+            background: var(--accent-light);
+            color: var(--accent);
+            border: 2px solid var(--accent);
         }
 
         .visual-arrow {
             font-size: 32px;
-            color: #667eea;
+            color: var(--accent);
             font-weight: bold;
         }
 
@@ -709,7 +720,7 @@
 
         .visual-card {
             background: #f8f9fa;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid var(--accent);
             padding: 12px;
             border-radius: 8px;
             transition: all 0.2s ease;
@@ -717,7 +728,7 @@
 
         .visual-card:hover {
             transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 4px 12px rgba(45, 106, 79, 0.2);
         }
 
         .visual-icon {
@@ -755,7 +766,7 @@
         }
 
         .comparison-table th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             color: white;
             padding: 12px;
             text-align: left;
@@ -789,7 +800,7 @@
 
         .mini-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-dark) 100%);
             transition: width 0.5s ease;
         }
 
@@ -799,7 +810,7 @@
             justify-content: center;
             width: 32px;
             height: 32px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             color: white;
             border-radius: 50%;
             font-weight: bold;
@@ -820,7 +831,7 @@
 
         .slideshow-nav-button {
             padding: 12px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             border: none;
             border-radius: 25px;
             color: white;
@@ -832,7 +843,7 @@
 
         .slideshow-nav-button:hover:not(:disabled) {
             transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(45, 106, 79, 0.4);
         }
 
         .slideshow-nav-button:disabled {
@@ -851,7 +862,7 @@
             margin-left: 8px;
             width: 18px;
             height: 18px;
-            background: #667eea;
+            background: var(--accent);
             color: white;
             border-radius: 50%;
             text-align: center;
@@ -863,7 +874,7 @@
         }
 
         .info-icon:hover {
-            background: #764ba2;
+            background: var(--accent-dark);
             transform: scale(1.1);
         }
 
@@ -1038,6 +1049,45 @@
             }
         }
 
+        /* independent-score note + 50% marker on confidence bars */
+        .score-note { font-size: 13px; color: var(--muted); text-align: center; margin: -6px 0 16px; }
+        .confidence-bar::after { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; background: var(--muted); opacity: .45; }
+
+        /* waveform strip */
+        .waveform-section { margin-top: 24px; background: #f8f9fa; border-radius: 15px; padding: 22px 24px 18px; }
+        .section-title { font-size: 18px; font-weight: 700; color: var(--ink); }
+        .section-sub { font-size: 13px; color: var(--muted); margin: 4px 0 14px; }
+        .wave-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        @media (max-width: 760px)  { .wave-grid { grid-template-columns: 1fr; } }
+        .wave-panel { background: white; border-radius: 10px; padding: 10px 12px 6px; border: 2px solid transparent; box-shadow: 0 2px 8px rgba(0,0,0,.06); position: relative; }
+        .wave-panel.key { border-color: var(--accent-mid); }
+        .wave-panel .wp-title { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; font-weight: 700; color: var(--ink); }
+        .wave-panel .wp-tag { font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-light); border-radius: 10px; padding: 1px 8px; }
+        .wave-panel .wp-stats { font-size: 11px; color: var(--muted); margin-top: 2px; min-height: 14px; }
+        .wave-panel svg { width: 100%; height: auto; display: block; margin-top: 4px; }
+        .wave-panel .wp-readout { position: absolute; right: 12px; top: 34px; font-size: 11px; color: var(--ink); background: rgba(255,255,255,.9); padding: 1px 6px; border-radius: 4px; pointer-events: none; display: none; }
+        .wave-legend { display: flex; flex-wrap: wrap; gap: 18px; font-size: 12px; color: var(--muted); margin-top: 12px; }
+        .wave-legend span::before { content: ''; display: inline-block; width: 14px; height: 10px; margin-right: 6px; vertical-align: -1px; border-radius: 2px; }
+        .wave-legend .l-sig::before { background: #c9ded3; }
+        .wave-legend .l-mean::before { background: transparent; border-top: 2px dashed var(--muted); height: 0; }
+        .wave-legend .l-ext::before { background: var(--oppose); border-radius: 50%; width: 10px; }
+        .wave-legend .l-sens::before { background: linear-gradient(90deg, #eaf1fb, var(--support)); }
+
+        /* feature grid */
+        .fgrid-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+        @media (max-width: 900px) { .fgrid-wrap { grid-template-columns: 1fr; } }
+        .fgrid-title { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+        .fgrid-sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+        table.fgrid { border-collapse: separate; border-spacing: 3px; width: 100%; table-layout: fixed; }
+        table.fgrid th { font-size: 12px; font-weight: 600; color: var(--muted); padding: 2px 4px; text-align: center; }
+        table.fgrid th.row { text-align: right; padding-right: 8px; color: var(--ink); white-space: nowrap; width: 34%; }
+        table.fgrid td { height: 38px; border-radius: 6px; text-align: center; font-size: 12px; font-weight: 600; color: var(--ink); background: #f1f3f2; cursor: default; }
+        table.fgrid td.na { background: repeating-linear-gradient(45deg, #f1f3f2, #f1f3f2 4px, #e6e9e7 4px, #e6e9e7 8px); color: var(--muted); font-weight: 400; }
+        table.fgrid td.dark { color: white; }
+        .fgrid-legend { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin-top: 10px; }
+        .fgrid-legend .bar { flex: 0 0 140px; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--oppose), #f1f3f2 50%, var(--support)); }
+        .fgrid-reading { font-size: 13px; color: var(--ink); background: white; border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; margin-top: 14px; line-height: 1.5; }
+
         @keyframes dots {
             0%, 20% { content: '.'; }
             40% { content: '..'; }
@@ -1048,7 +1098,7 @@
 <body>
     <div class="upload-container" id="uploadContainer">
         <div class="upload-box">
-            <h2 style="color: #667eea; margin-bottom: 20px;">Upload PMU Data</h2>
+            <h2 style="color: var(--accent); margin-bottom: 20px;">Upload PMU Data</h2>
             <input type="file" id="fileInput" accept=".csv" style="display: none;">
             <button class="upload-button" id="uploadBtn" onclick="document.getElementById('fileInput').click()">
                 📁 Choose CSV File
@@ -1065,6 +1115,7 @@
     </div>
 
     <div class="results-container" id="resultsContainer">
+        <div class="score-note">Each percentage is an independent yes/no score from a separate classifier for that class. Scores do not add up to 100%; the tick marks 50%.</div>
         <div class="columns-wrapper">
             <div class="column" id="primaryColumn">
                 <div class="column-header">Primary</div>
@@ -1082,8 +1133,19 @@
             </div>
         </div>
 
+        <div class="waveform-section" id="waveformSection" style="display:none">
+            <div class="section-title">Input record <span id="waveSource" style="font-weight:400;color:var(--muted);font-size:14px"></span></div>
+            <div class="section-sub" id="waveSub">The six PMU channels the 23 features are computed from. Angles are unwrapped. Outlined panels are the channels carrying the most weight for the selected class.</div>
+            <div class="wave-grid" id="waveGrid"></div>
+            <div class="wave-legend">
+                <span class="l-mean">mean</span><span class="l-sig">mean ± 1 standard deviation</span>
+                <span class="l-ext">samples beyond 3σ (these drive the peakedness and asymmetry features)</span>
+                <span class="l-sens">sensitivity strip: darker = removing this stretch lowers the model's confidence more</span>
+            </div>
+        </div>
+
         <div class="explanation-section" id="explanationSection">
-            <div class="explanation-header"><span id="xaiMethodName">SHAP</span> for: <span id="explanationLabel"></span></div>
+            <div class="explanation-header"><span id="xaiMethodName">Why</span> <span id="explanationLabel"></span>?</div>
             <div class="explanation-subtitle" id="explanationSubtitle">Top features that influenced this prediction</div>
             <div class="explanation-chart">
                 <div class="impact-labels" id="impactLabels">
@@ -1092,24 +1154,16 @@
                 </div>
                 <div class="chart-bars" id="chartBars"></div>
                 <div class="xai-navigation">
-                    <button class="xai-nav-button active" data-type="shap" onclick="switchXAIType('shap')">
-                        SHAP
+                    <button class="xai-nav-button active" data-type="grid" onclick="switchXAIType('grid')">
+                        Feature grid
                         <span class="info-icon" onclick="event.stopPropagation(); openSlideshow('shap')" title="Learn more about SHAP">?</span>
                     </button>
-                    <button class="xai-nav-button" data-type="lime" onclick="switchXAIType('lime')">
-                        LIME
-                        <span class="info-icon" onclick="event.stopPropagation(); openSlideshow('lime')" title="Learn more about LIME">?</span>
-                    </button>
-                    <button class="xai-nav-button" data-type="mdi" onclick="switchXAIType('mdi')">
-                        MDI
-                        <span class="info-icon" onclick="event.stopPropagation(); openSlideshow('mdi')" title="Learn more about MDI">?</span>
-                    </button>
                     <button class="xai-nav-button" data-type="path" onclick="switchXAIType('path')">
-                        Decision Path
+                        Decision path
                         <span class="info-icon" onclick="event.stopPropagation(); openSlideshow('path')" title="Learn more about Decision Path">?</span>
                     </button>
                     <button class="xai-nav-button" data-type="counterfactual" onclick="switchXAIType('counterfactual')">
-                        Counterfactual
+                        What-if example
                         <span class="info-icon" onclick="event.stopPropagation(); openSlideshow('counterfactual')" title="Learn more about Counterfactual">?</span>
                     </button>
                 </div>
@@ -1162,13 +1216,18 @@
     <script>
         let currentPrimary = null;
         let currentSecondary = null;
-        let currentXAIType = 'shap'; // Remember last XAI type
+        let currentXAIType = 'grid'; // Remember last XAI type
         let currentExplanationData = null; // Store current explanation data
         let currentLevel = null; // Store current level for counterfactual
         let currentLabel = null; // Store current label for counterfactual
         let currentSlideIndex = 0;
         let currentSlideshowType = null;
         let selectedFile = null;
+        // Same-origin when served by Flask; fall back to the dev port when opened from disk
+        const API = location.protocol === 'file:' ? 'http://localhost:5001' : '';
+        let waveData = null;        // /waveform payload
+        let sensData = null;        // /sensitivity payload for the current label
+        let keyChannels = [];       // channels carrying the most |SHAP| for the current label
 
         // File selection handler
         document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -1203,7 +1262,7 @@
                 formData.append('file', selectedFile);
 
                 // Upload file
-                const uploadResponse = await fetch('http://localhost:5001/upload', {
+                const uploadResponse = await fetch(`${API}/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -1217,11 +1276,12 @@
                 console.log('File uploaded successfully:', uploadData.filename);
 
                 // Fetch primary predictions
-                const response = await fetch('http://localhost:5001/predictions');
+                const response = await fetch(`${API}/predictions`);
                 const data = await response.json();
 
                 // Render primary column
                 renderColumn('primary', data.primary);
+                loadWaveform();
 
                 // Auto-select top primary and load its children
                 if (data.primary && data.primary.length > 0) {
@@ -1243,14 +1303,15 @@
 
             try {
                 // Trigger backend computation
-                await fetch('http://localhost:5001/load', { method: 'POST' });
+                await fetch(`${API}/load`, { method: 'POST' });
 
                 // Fetch primary predictions
-                const response = await fetch('http://localhost:5001/predictions');
+                const response = await fetch(`${API}/predictions`);
                 const data = await response.json();
 
                 // Render primary column
                 renderColumn('primary', data.primary);
+                loadWaveform();
 
                 // Auto-select top primary and load its children
                 if (data.primary && data.primary.length > 0) {
@@ -1333,7 +1394,7 @@
 
             try {
                 // Fetch filtered secondaries
-                const response = await fetch(`http://localhost:5001/predictions/${encodeURIComponent(primaryLabel)}`);
+                const response = await fetch(`${API}/predictions/${encodeURIComponent(primaryLabel)}`);
                 const data = await response.json();
 
                 // Render secondary column
@@ -1369,7 +1430,7 @@
 
             try {
                 // Fetch filtered tertiaries
-                const response = await fetch(`http://localhost:5001/predictions/${encodeURIComponent(currentPrimary)}/${encodeURIComponent(secondaryLabel)}`);
+                const response = await fetch(`${API}/predictions/${encodeURIComponent(currentPrimary)}/${encodeURIComponent(secondaryLabel)}`);
                 const data = await response.json();
 
                 // Render tertiary column
@@ -1395,7 +1456,7 @@
 
             try {
                 // Fetch explanations (includes SHAP, LIME, and MDI)
-                const response = await fetch(`http://localhost:5001/explanations/${level}/${encodeURIComponent(label)}`);
+                const response = await fetch(`${API}/explanations/${level}/${encodeURIComponent(label)}`);
                 const data = await response.json();
 
                 if (data.error) {
@@ -1405,6 +1466,8 @@
 
                 // Store data globally
                 currentExplanationData = data;
+                highlightChannels(data);
+                loadSensitivity(level, label);
 
                 // Render using the remembered XAI type
                 renderXAIChart(currentXAIType);
@@ -1437,44 +1500,24 @@
             const xaiMethodName = document.getElementById('xaiMethodName');
             const xaiExplanationTitle = document.getElementById('xaiExplanationTitle');
             const xaiExplanationText = document.getElementById('xaiExplanationText');
-            const chartBars = document.getElementById('chartBars');
-            const impactLabels = document.getElementById('impactLabels');
             const explanationSubtitle = document.getElementById('explanationSubtitle');
+            document.getElementById('impactLabels').classList.add('hidden');
+            xaiMethodName.textContent = 'Why';
 
-            if (type === 'shap') {
-                xaiMethodName.textContent = 'SHAP';
-                xaiExplanationTitle.textContent = 'What is SHAP?';
-                xaiExplanationText.textContent = 'SHAP (SHapley Additive exPlanations) values show how much each feature contributed to this prediction. Features with larger bars had more influence. Positive values (blue) pushed the model toward this classification, while negative values (red) pushed it away. SHAP is based on game theory and provides consistent, reliable explanations.';
-                explanationSubtitle.textContent = 'Top features that influenced this prediction';
-                impactLabels.classList.remove('hidden');
-                renderChart(currentExplanationData.features, 'shap');
-            } else if (type === 'lime') {
-                xaiMethodName.textContent = 'LIME';
-                xaiExplanationTitle.textContent = 'What is LIME?';
-                xaiExplanationText.textContent = 'LIME (Local Interpretable Model-agnostic Explanations) shows which features were most important for this specific prediction by creating a simplified model around it. Positive values (blue) support this classification, while negative values (red) oppose it. LIME focuses on local explanations, making complex models easier to understand for individual predictions.';
-                explanationSubtitle.textContent = 'Top features that influenced this prediction';
-                impactLabels.classList.remove('hidden');
-                renderChart(currentExplanationData.features, 'lime');
-            } else if (type === 'mdi') {
-                xaiMethodName.textContent = 'MDI (Feature Importance)';
-                xaiExplanationTitle.textContent = 'What is Mean Decrease in Impurity (MDI)?';
-                xaiExplanationText.textContent = 'MDI (Mean Decrease in Impurity) shows the average decrease in node impurity (e.g., Gini impurity) when splitting on each feature across all trees in the Random Forest. Higher values indicate features that are more important for making accurate predictions globally across the entire model. Unlike SHAP and LIME which are instance-specific, MDI provides a global view of feature importance.';
-                explanationSubtitle.textContent = 'Global feature importance from Random Forest';
-                impactLabels.classList.add('hidden');
-                renderMDIChart(currentExplanationData.features);
+            if (type === 'grid') {
+                xaiExplanationTitle.textContent = 'How to read the feature grid';
+                xaiExplanationText.textContent = 'Each cell is one of the 23 features: a channel (row) summarised by a statistic (column). Blue cells pushed the model toward this class for this record, orange cells pushed it away, and the number is the SHAP value (change in probability). The grey grid on the right shows which cells the model relies on in general, across all training records; it is the same for every file.';
+                explanationSubtitle.textContent = 'What in this record pushed the model toward or away from this class';
+                renderFeatureGrid(currentExplanationData);
             } else if (type === 'path') {
-                xaiMethodName.textContent = 'Decision Path';
-                xaiExplanationTitle.textContent = 'What is Decision Path?';
-                xaiExplanationText.textContent = 'Decision Path shows the step-by-step decisions the Random Forest made. Each step shows a condition (if feature ≤ or > threshold) and whether the actual input satisfied it. The importance score (information gain) indicates how critical that decision was. Higher scores mean the decision significantly helped classify the sample. Support percentage shows how many trees agreed on this specific decision.';
-                explanationSubtitle.textContent = '10 decisions that produced the most information gain';
-                impactLabels.classList.add('hidden');
+                xaiExplanationTitle.textContent = 'How to read the decision path';
+                xaiExplanationText.textContent = 'The random forest is hundreds of trees that each ask a chain of yes/no questions. These are the ten questions, merged across trees, that gained the most information for this record. Each shows the feature, the split value the trees used, this record\'s value, and how many trees agreed.';
+                explanationSubtitle.textContent = 'The ten most informative questions the trees asked about this record';
                 renderDecisionPath(currentExplanationData.path);
             } else if (type === 'counterfactual') {
-                xaiMethodName.textContent = 'Counterfactual';
-                xaiExplanationTitle.textContent = 'What is a Counterfactual?';
-                xaiExplanationText.textContent = 'Counterfactual analysis shows the minimum percentage change needed in each feature to cause misclassification (flip the prediction across the 50% threshold). Smaller percentages indicate features the model is more sensitive to. This helps identify which features have the most impact on the prediction and how robust the classification is.';
-                explanationSubtitle.textContent = 'Feature changes that would alter the prediction';
-                impactLabels.classList.add('hidden');
+                xaiExplanationTitle.textContent = 'How to read the what-if example';
+                xaiExplanationText.textContent = 'A random search looks for a change to the 23 features that flips the model\'s decision. It returns one example, not the smallest or most physical change, so read it as "the model would decide differently if this statistic looked like that", not as a recipe.';
+                explanationSubtitle.textContent = 'One example of feature values that would flip this decision';
                 renderCounterfactual(currentLevel, currentLabel);
             }
         }
@@ -1516,11 +1559,10 @@
                 const directionClass = step.direction === 'left' ? 'left' : 'right';
 
                 decision.innerHTML = `
-                    If <span class="path-step-feature">${step.feature_name}</span>
-                    <span class="path-step-direction ${directionClass}">${directionSymbol}</span>
-                    <span class="path-step-value">${step.threshold.toFixed(4)}</span>
-                    <br>
-                    <small style="color: #666;">(Actual value: <span class="path-step-value">${step.actual_value.toFixed(4)}</span>)</small>
+                    <span class="path-step-feature" title="${step.feature_name}">${step.display_name || step.feature_name}</span>
+                    is <span class="path-step-value">${step.actual_value.toFixed(4)}</span>, which is
+                    <span class="path-step-direction ${directionClass}">${step.direction === 'left' ? 'at or below' : 'above'}</span>
+                    the split value <span class="path-step-value">${step.threshold.toFixed(4)}</span>
                 `;
 
                 const support = document.createElement('div');
@@ -1548,154 +1590,181 @@
             chartBars.appendChild(pathContainer);
         }
 
-        function renderChart(features, valueType) {
+        // ---------- feature grid (SHAP per record, MDI as the model's general priorities)
+        const STAT_LABEL = { mean: 'mean', std: 'spread', skew: 'asymmetry', kurtosis: 'peakedness' };
+        function mixColor(hex, t) {  // blend hex colour toward the neutral cell grey by (1-t)
+            const n = [0xf1, 0xf3, 0xf2], c = [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+            return `rgb(${c.map((v,i) => Math.round(n[i] + (v - n[i]) * t)).join(',')})`;
+        }
+        function renderFeatureGrid(data) {
             const chartBars = document.getElementById('chartBars');
             chartBars.innerHTML = '';
+            const feats = data.features, chOrder = data.channel_order, stOrder = data.stat_order, chInfo = data.channels;
+            const byKey = {}; feats.forEach(f => byKey[f.name] = f);
+            const maxShap = Math.max(...feats.map(f => Math.abs(f.shap))) || 1;
+            const maxMdi = Math.max(...feats.map(f => f.mdi)) || 1;
+            const support = getComputedStyle(document.documentElement).getPropertyValue('--support').trim();
+            const oppose = getComputedStyle(document.documentElement).getPropertyValue('--oppose').trim();
+            const label = data.label;
 
-            // Sort by absolute value to show most important features first
-            const sortedFeatures = [...features].sort((a, b) => Math.abs(b[valueType]) - Math.abs(a[valueType]));
-
-            // Take top 10 features
-            const topFeatures = sortedFeatures.slice(0, 10);
-
-            // Find max absolute value for scaling
-            const maxAbs = Math.max(...topFeatures.map(f => Math.abs(f[valueType])));
-
-            topFeatures.forEach((feature, index) => {
-                const featureBar = document.createElement('div');
-                featureBar.className = 'feature-bar';
-
-                const featureName = document.createElement('div');
-                featureName.className = 'feature-name';
-                featureName.textContent = feature.name;
-
-                const barContainer = document.createElement('div');
-                barContainer.className = 'bar-container';
-
-                // Add zero line
-                const zeroLine = document.createElement('div');
-                zeroLine.className = 'zero-line';
-                barContainer.appendChild(zeroLine);
-
-                // Create bar with intensity-based color
-                const barFill = document.createElement('div');
-                const value = feature[valueType];
-                const absValue = Math.abs(value);
-                const isPositive = value >= 0;
-
-                // Determine intensity level based on absolute value relative to max
-                const intensity = absValue / maxAbs;
-                let intensityClass;
-                if (intensity > 0.66) {
-                    intensityClass = 'high'; // Very impactful
-                } else if (intensity > 0.33) {
-                    intensityClass = 'medium'; // Somewhat impactful
-                } else {
-                    intensityClass = 'low'; // Slightly impactful
-                }
-
-                barFill.className = `bar-fill ${isPositive ? 'positive' : 'negative'} ${intensityClass}`;
-
-                const barValue = document.createElement('div');
-                barValue.className = 'bar-value';
-                barValue.textContent = value.toFixed(4);
-
-                // Calculate bar width and position
-                const widthPercent = absValue / maxAbs * 50; // 50% max (half the container)
-
-                // Set minimum width to accommodate text (at least 80px for 6 digits)
-                const minWidthPx = 80;
-                const containerWidth = 600; // Approximate container width (half of bar-container)
-                const calculatedWidthPx = (widthPercent / 100) * containerWidth;
-                const finalWidthPx = Math.max(minWidthPx, calculatedWidthPx);
-                const finalWidthPercent = (finalWidthPx / containerWidth) * 100;
-
-                if (value >= 0) {
-                    // Positive: start from center, go right
-                    barFill.style.left = '50%';
-                    barFill.style.width = '0%';
-                } else {
-                    // Negative: start from center, go left
-                    barFill.style.right = '50%';
-                    barFill.style.width = '0%';
-                }
-
-                barFill.appendChild(barValue);
-                barContainer.appendChild(barFill);
-
-                featureBar.appendChild(featureName);
-                featureBar.appendChild(barContainer);
-                chartBars.appendChild(featureBar);
-
-                // Animate bar with minimum width
-                setTimeout(() => {
-                    barFill.style.width = Math.max(finalWidthPercent, 13) + '%'; // Min 13% for text visibility
-                }, 50 * index);
-            });
+            function table(kind) {
+                let h = `<table class="fgrid"><tr><th></th>${stOrder.map(st => `<th>${STAT_LABEL[st]}</th>`).join('')}</tr>`;
+                chOrder.forEach(ch => {
+                    h += `<tr><th class="row" title="${chInfo[ch].long}">${chInfo[ch].short}</th>`;
+                    stOrder.forEach(st => {
+                        const f = byKey[`${ch}_${st}`];
+                        if (!f) { h += `<td class="na" title="not a model input">n/a</td>`; return; }
+                        if (f.mdi === 0 && Math.abs(f.shap) < 1e-9) { h += `<td class="na" title="${f.name}\nconstant: this statistic is identical for every record after normalisation, so the model cannot use it">const.</td>`; return; }
+                        if (kind === 'shap') {
+                            const t = Math.abs(f.shap) / maxShap, col = mixColor(f.shap >= 0 ? support : oppose, t);
+                            h += `<td class="${t > 0.55 ? 'dark' : ''}" style="background:${col}" title="${f.name}\nSHAP ${f.shap.toFixed(4)} (${f.shap >= 0 ? 'supports' : 'opposes'} ${label})">${f.shap >= 0 ? '+' : ''}${f.shap.toFixed(3)}</td>`;
+                        } else {
+                            const t = f.mdi / maxMdi, g = Math.round(0xf1 - t * (0xf1 - 0x55));
+                            h += `<td class="${t > 0.55 ? 'dark' : ''}" style="background:rgb(${g},${g},${g})" title="${f.name}\nMDI ${f.mdi.toFixed(4)}">${f.mdi.toFixed(3)}</td>`;
+                        }
+                    });
+                    h += '</tr>';
+                });
+                return h + '</table>';
+            }
+            const top = [...feats].sort((a, b) => Math.abs(b.shap) - Math.abs(a.shap)).slice(0, 3);
+            const pos = top.filter(f => f.shap > 0), neg = top.filter(f => f.shap < 0);
+            const sentence = (pos.length ? `Strongest evidence for <b>${label}</b>: ${pos.map(f => `${f.display_name} (+${f.shap.toFixed(3)})`).join(', ')}. ` : '') +
+                             (neg.length ? `Pushing against it: ${neg.map(f => `${f.display_name} (${f.shap.toFixed(3)})`).join(', ')}. ` : '') +
+                             `Hover a cell for the raw feature name.`;
+            chartBars.innerHTML = `
+                <div class="fgrid-wrap">
+                    <div>
+                        <div class="fgrid-title">This record</div>
+                        <div class="fgrid-sub">SHAP: how each feature moved the probability of <b>${label}</b></div>
+                        ${table('shap')}
+                        <div class="fgrid-legend"><span>opposes</span><div class="bar"></div><span>supports</span></div>
+                    </div>
+                    <div>
+                        <div class="fgrid-title">The model in general</div>
+                        <div class="fgrid-sub">MDI importance: which features this classifier leans on across all training records (same for every file)</div>
+                        ${table('mdi')}
+                    </div>
+                </div>
+                <div class="fgrid-reading">${sentence}</div>`;
         }
 
-        function renderMDIChart(features) {
-            const chartBars = document.getElementById('chartBars');
-            chartBars.innerHTML = '';
-
-            // Sort by MDI value (descending)
-            const sortedFeatures = [...features].sort((a, b) => b.mdi - a.mdi);
-
-            // Take top 10 features
-            const topFeatures = sortedFeatures.slice(0, 10);
-
-            // Find max value for scaling
-            const maxValue = Math.max(...topFeatures.map(f => f.mdi));
-
-            topFeatures.forEach((feature, index) => {
-                const featureBar = document.createElement('div');
-                featureBar.className = 'feature-bar';
-
-                const featureName = document.createElement('div');
-                featureName.className = 'feature-name';
-                featureName.textContent = feature.name;
-
-                const barContainer = document.createElement('div');
-                barContainer.className = 'bar-container';
-
-                // Create bar (MDI is always positive, no zero line needed)
-                const barFill = document.createElement('div');
-                const value = feature.mdi;
-
-                // Determine intensity level
-                const intensity = value / maxValue;
-                let intensityClass;
-                if (intensity > 0.66) {
-                    intensityClass = 'high';
-                } else if (intensity > 0.33) {
-                    intensityClass = 'medium';
-                } else {
-                    intensityClass = 'low';
-                }
-
-                barFill.className = `bar-fill positive ${intensityClass}`;
-
-                const barValue = document.createElement('div');
-                barValue.className = 'bar-value';
-                barValue.textContent = value.toFixed(4);
-
-                // Calculate bar width (full width since always positive)
-                const widthPercent = (value / maxValue) * 100;
-
-                barFill.style.left = '0';
-                barFill.style.width = '0%';
-
-                barFill.appendChild(barValue);
-                barContainer.appendChild(barFill);
-
-                featureBar.appendChild(featureName);
-                featureBar.appendChild(barContainer);
-                chartBars.appendChild(featureBar);
-
-                // Animate bar
-                setTimeout(() => {
-                    barFill.style.width = Math.max(widthPercent, 15) + '%'; // Min 15% for text visibility
-                }, 50 * index);
+        // ---------- input waveform strip
+        async function loadWaveform() {
+            const section = document.getElementById('waveformSection');
+            try {
+                const r = await fetch(`${API}/waveform`);
+                waveData = await r.json();
+                if (waveData.error) throw new Error(waveData.error);
+                document.getElementById('waveSource').textContent = `${waveData.source} · ${waveData.n_samples.toLocaleString()} samples · ${waveData.duration.toFixed(1)} s`;
+                section.style.display = '';
+                renderWaveforms();
+            } catch (e) { console.error('waveform', e); section.style.display = 'none'; }
+        }
+        const WP = { w: 640, h: 170, l: 50, r: 10, t: 8, b: 30, strip: 10 };   // panel geometry (viewBox units)
+        function renderWaveforms() {
+            const grid = document.getElementById('waveGrid');
+            grid.innerHTML = '';
+            if (!waveData) return;
+            waveData.channels.forEach(ch => {
+                const panel = document.createElement('div');
+                panel.className = 'wave-panel' + (keyChannels.includes(ch.name) ? ' key' : '');
+                panel.dataset.channel = ch.name;
+                const feats = ch.features || {};
+                const fx = Object.keys(feats).filter(k => k === 'skew' || k === 'kurtosis').map(k => `${STAT_LABEL[k]} ${feats[k].toFixed(2)}`).join(' · ');
+                panel.innerHTML = `
+                    <div class="wp-title"><span title="${ch.long}">${ch.short} <span style="font-weight:400;color:var(--muted)">(${ch.unit})</span></span>${keyChannels.includes(ch.name) ? '<span class="wp-tag">key channel</span>' : ''}</div>
+                    <div class="wp-stats">mean ${fmt(ch.mean)} · σ ${fmt(ch.std)}${fx ? ' · ' + fx : ''}</div>
+                    <div class="wp-readout"></div>`;
+                panel.appendChild(waveSvg(ch));
+                grid.appendChild(panel);
+            });
+        }
+        function fmt(v) { const a = Math.abs(v); return a >= 100 ? v.toFixed(1) : a >= 1 ? v.toFixed(3) : v.toExponential(2); }
+        function waveSvg(ch) {
+            const { w, h, l, r, t, b, strip } = WP;
+            const x0 = l, x1 = w - r, y0 = t, y1 = h - b - strip - 4;
+            const tmin = ch.t[0], tmax = ch.t[ch.t.length - 1];
+            let vmin = Math.min(ch.min, ch.mean - ch.std), vmax = Math.max(ch.max, ch.mean + ch.std);
+            if (vmax - vmin < 1e-12) { vmin -= 1; vmax += 1; }
+            const pad = (vmax - vmin) * 0.06; vmin -= pad; vmax += pad;
+            const X = tt => x0 + (tt - tmin) / (tmax - tmin || 1) * (x1 - x0);
+            const Y = vv => y1 - (vv - vmin) / (vmax - vmin) * (y1 - y0);
+            const ns = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(ns, 'svg');
+            svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+            const el = (tag, attrs, text) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; svg.appendChild(e); return e; };
+            // ±1σ band and mean
+            el('rect', { x: x0, y: Math.max(y0, Y(ch.mean + ch.std)), width: x1 - x0, height: Math.max(0, Math.min(y1, Y(ch.mean - ch.std)) - Math.max(y0, Y(ch.mean + ch.std))), fill: '#c9ded3', opacity: 0.55 });
+            el('line', { x1: x0, x2: x1, y1: Y(ch.mean), y2: Y(ch.mean), stroke: '#5f6b65', 'stroke-dasharray': '4 3', 'stroke-width': 1 });
+            // axes
+            el('line', { x1: x0, x2: x1, y1: y1, y2: y1, stroke: '#cfd6d2', 'stroke-width': 1 });
+            [vmin + pad, vmax - pad].forEach(v => el('text', { x: x0 - 4, y: Y(v) + 3, 'text-anchor': 'end', 'font-size': 9, fill: '#5f6b65' }, fmt(v)));
+            const nt = 5;
+            for (let i = 0; i <= nt; i++) { const tt = tmin + (tmax - tmin) * i / nt; el('line', { x1: X(tt), x2: X(tt), y1: y1, y2: y1 + 3, stroke: '#cfd6d2' }); el('text', { x: X(tt), y: y1 + 12, 'text-anchor': i === 0 ? 'start' : i === nt ? 'end' : 'middle', 'font-size': 9, fill: '#5f6b65' }, tt.toFixed(0) + (i === nt ? ' s' : '')); }
+            // trace
+            el('polyline', { points: ch.t.map((tt, i) => `${X(tt).toFixed(1)},${Y(ch.v[i]).toFixed(1)}`).join(' '), fill: 'none', stroke: 'var(--accent-dark)', 'stroke-width': 1.2, 'stroke-linejoin': 'round' });
+            // extreme samples (|z| >= 3)
+            ch.extremes.forEach(([tt, vv, z]) => el('circle', { cx: X(tt), cy: Y(vv), r: 2.6, fill: 'var(--oppose)', stroke: 'white', 'stroke-width': 0.8 }).appendChild(Object.assign(document.createElementNS(ns, 'title'), { textContent: `t=${tt.toFixed(2)} s  value ${fmt(vv)}  z=${z.toFixed(1)}` })));
+            // sensitivity strip placeholder (filled by renderSensitivity)
+            const g = el('g', { class: 'sens-strip', 'data-y': y1 + 16, 'data-x0': x0, 'data-x1': x1, 'data-tmin': tmin, 'data-tmax': tmax });
+            // hover readout
+            const cursor = el('line', { x1: 0, x2: 0, y1: y0, y2: y1, stroke: 'var(--accent)', 'stroke-width': 1, opacity: 0 });
+            svg.addEventListener('mousemove', ev => {
+                const rect = svg.getBoundingClientRect(); const px = (ev.clientX - rect.left) / rect.width * w;
+                const tt = tmin + (px - x0) / (x1 - x0) * (tmax - tmin);
+                let lo = 0, hi = ch.t.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (ch.t[m] < tt) lo = m + 1; else hi = m; }
+                cursor.setAttribute('x1', X(ch.t[lo])); cursor.setAttribute('x2', X(ch.t[lo])); cursor.setAttribute('opacity', 1);
+                const ro = svg.parentElement.querySelector('.wp-readout'); ro.style.display = 'block'; ro.textContent = `t = ${ch.t[lo].toFixed(2)} s   ${fmt(ch.v[lo])} ${ch.unit}`;
+            });
+            svg.addEventListener('mouseleave', () => { cursor.setAttribute('opacity', 0); svg.parentElement.querySelector('.wp-readout').style.display = 'none'; });
+            return svg;
+        }
+        function highlightChannels(expl) {
+            const byCh = {};
+            expl.features.forEach(f => byCh[f.channel] = (byCh[f.channel] || 0) + Math.abs(f.shap));
+            const total = Object.values(byCh).reduce((a, b) => a + b, 0) || 1;
+            // key channels: the fewest channels that together carry 60% of the |SHAP| mass (at most 3)
+            const sorted = Object.entries(byCh).sort((a, b) => b[1] - a[1]);
+            let acc = 0; keyChannels = [];
+            for (const [ch, v] of sorted) { if (acc / total >= 0.6 || keyChannels.length >= 3) break; keyChannels.push(ch); acc += v; }
+            document.getElementById('waveSub').innerHTML = `The six PMU channels the 23 features are computed from. Angles are unwrapped. Outlined panels carry ${Math.round(acc / total * 100)}% of the evidence for <b>${expl.label}</b>.`;
+            renderWaveforms();
+            if (sensData && sensData.label === expl.label) renderSensitivity();
+        }
+        async function loadSensitivity(level, label) {
+            sensData = null;
+            document.querySelectorAll('.sens-strip').forEach(g => g.innerHTML = '');
+            try {
+                const r = await fetch(`${API}/sensitivity/${level}/${encodeURIComponent(label)}`);
+                const d = await r.json();
+                if (d.error) throw new Error(d.error);
+                if (d.label !== currentLabel) return;   // user moved on
+                sensData = d; renderSensitivity();
+            } catch (e) { console.error('sensitivity', e); }
+        }
+        function renderSensitivity() {
+            if (!sensData || !waveData) return;
+            const maxDrop = Math.max(1e-6, ...Object.values(sensData.drop_by_channel).flat().map(Math.abs));
+            const support = getComputedStyle(document.documentElement).getPropertyValue('--support').trim();
+            document.querySelectorAll('.wave-panel').forEach(panel => {
+                const ch = panel.dataset.channel, g = panel.querySelector('.sens-strip'); if (!g) return;
+                const drops = sensData.drop_by_channel[ch]; if (!drops) return;
+                const y = +g.dataset.y, x0 = +g.dataset.x0, x1 = +g.dataset.x1, tmin = +g.dataset.tmin, tmax = +g.dataset.tmax;
+                g.innerHTML = '';
+                sensData.windows.forEach(([a, b], i) => {
+                    const xa = x0 + (a - tmin) / (tmax - tmin || 1) * (x1 - x0), xb = x0 + (b - tmin) / (tmax - tmin || 1) * (x1 - x0);
+                    const d = drops[i], t = Math.max(0, d) / maxDrop;
+                    const rct = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rct.setAttribute('x', xa); rct.setAttribute('y', y); rct.setAttribute('width', Math.max(0.5, xb - xa - 0.6)); rct.setAttribute('height', WP.strip);
+                    rct.setAttribute('rx', 1.5); rct.setAttribute('fill', mixColor(support, t));
+                    const ti = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                    ti.textContent = `${a.toFixed(1)}–${b.toFixed(1)} s: removing this stretch of ${ch} changes P(${sensData.label}) by ${(-d * 100).toFixed(1)} points`;
+                    rct.appendChild(ti); g.appendChild(rct);
+                });
+                const lab = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                lab.setAttribute('x', x0 - 4); lab.setAttribute('y', y + 7.5); lab.setAttribute('text-anchor', 'end'); lab.setAttribute('font-size', 8); lab.setAttribute('fill', '#5f6b65'); lab.textContent = 'sens.';
+                g.appendChild(lab);
             });
         }
 
@@ -1704,7 +1773,7 @@
             chartBars.innerHTML = '<div class="loading">Generating counterfactual...</div>';
 
             try {
-                const response = await fetch(`http://localhost:5001/counterfactual/${level}/${encodeURIComponent(label)}`);
+                const response = await fetch(`${API}/counterfactual/${level}/${encodeURIComponent(label)}`);
                 const data = await response.json();
 
                 if (data.error) {
@@ -1725,9 +1794,9 @@
                 summaryDiv.innerHTML = `
                     <div style="text-align: center;">
                         <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Current Prediction</div>
-                        <div style="font-size: 24px; font-weight: bold; color: #667eea;">Class ${data.current_prediction} (${(data.current_probability * 100).toFixed(1)}%)</div>
+                        <div style="font-size: 24px; font-weight: bold; color: var(--accent);">Class ${data.current_prediction} (${(data.current_probability * 100).toFixed(1)}%)</div>
                         <div style="font-size: 12px; color: #999; margin-top: 10px;">
-                            Minimum changes needed per feature to flip prediction to Class ${data.desired_prediction}
+                            One example of feature values that would flip the decision to Class ${data.desired_prediction}. Found by random search; not the smallest or most physical change.
                         </div>
                     </div>
                 `;
@@ -1747,13 +1816,13 @@
 
                     changeDiv.innerHTML = `
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <div style="font-weight: bold; color: #333; font-size: 15px;">${change.feature}</div>
+                            <div style="font-weight: bold; color: #333; font-size: 15px;" title="${change.feature}">${change.display_name || change.feature}</div>
                             <div style="font-size: 24px; font-weight: bold; color: ${changeColor};">
                                 ${changeSymbol} ${Math.abs(change.change).toFixed(4)}
                             </div>
                         </div>
                         <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
-                            This feature needs a <span style="font-weight: bold; color: ${changeColor};">${Math.abs(change.change).toFixed(4)} ${changeDirection}</span> to shift the prediction
+                            In this example the feature is <span style="font-weight: bold; color: ${changeColor};">${changeDirection}d by ${Math.abs(change.change).toFixed(4)}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999;">
                             <span>Current: ${change.original.toFixed(4)}</span>
@@ -1898,7 +1967,7 @@
                             </div>
                             <div class="visual-diagram" style="margin-top: 30px;">
                                 <div style="text-align: center;">
-                                    <div style="font-size: 20px; font-weight: bold; color: #667eea; margin-bottom: 15px;">🤝 For Decision Making</div>
+                                    <div style="font-size: 20px; font-weight: bold; color: var(--accent); margin-bottom: 15px;">🤝 For Decision Making</div>
                                     <p style="font-size: 15px; line-height: 1.8; color: #333;">SHAP helps you <strong>trust or question</strong> predictions by showing which features drove the decision and by how much.</p>
                                 </div>
                             </div>
@@ -2130,7 +2199,7 @@
                         title: 'Interpreting Decision Steps',
                         content: `
                             <div class="visual-grid">
-                                <div class="visual-card" style="border-left-color: #667eea;">
+                                <div class="visual-card" style="border-left-color: var(--accent);">
                                     <span class="visual-icon" style="font-size: 24px;">📋</span>
                                     <strong style="font-size: 13px;">Condition</strong>
                                     <p style="margin: 5px 0 0 0; font-size: 11px; color: #666;">If Feature ≤ or > Threshold</p>
@@ -2181,8 +2250,8 @@
                                     <div class="visual-arrow" style="font-size: 24px;">→<br><span style="font-size: 12px;">change?</span></div>
                                     <div class="visual-box">🎯 Target<br>Class B (80%)</div>
                                 </div>
-                                <div style="text-align: center; margin-top: 20px; padding: 15px; background: #f0e6ff; border-radius: 10px;">
-                                    <strong style="color: #667eea; font-size: 16px;">❓ What's the MINIMUM change needed?</strong>
+                                <div style="text-align: center; margin-top: 20px; padding: 15px; background: var(--accent-light); border-radius: 10px;">
+                                    <strong style="color: var(--accent); font-size: 16px;">❓ What's the MINIMUM change needed?</strong>
                                 </div>
                             </div>
                             <div class="highlight" style="margin-top: 20px;">
@@ -2259,7 +2328,7 @@
             currentSlideshowType = type;
             currentSlideIndex = 0;
 
-            const content = slideshowContent[type];
+            const content = slideshowContent[type === 'grid' ? 'shap' : type];
             if (!content) return;
 
             // Set title
@@ -2422,7 +2491,7 @@
             button.disabled = true;
 
             try {
-                const response = await fetch(`http://localhost:5001/summarize/${currentLevel}/${encodeURIComponent(currentLabel)}`);
+                const response = await fetch(`${API}/summarize/${currentLevel}/${encodeURIComponent(currentLabel)}`);
                 const data = await response.json();
 
                 if (data.error) {

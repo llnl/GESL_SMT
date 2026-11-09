@@ -131,13 +131,15 @@ def successive_binary_classifier(
     store: ClassifierStore,
     level: str,
     compute_explanations: bool = False,
+    compute_lime: bool = False,
 ) -> str:
     """Successive (best-score) binary classifier selection.
 
     Loads a binary classifier per label and selects the label that yields the max predicted probability.
 
     level: 'secondary' or 'tertiary'
-    compute_explanations: If True, compute SHAP, LIME, MDI, and path explanations (expensive). Default False.
+    compute_explanations: If True, compute SHAP, MDI and path explanations. Default False.
+    compute_lime: If True, also run LIME (5000 perturbations per label; slow, and no longer shown in the viewer). Default False.
     """
     outputs = []
     output_dict={}
@@ -174,77 +176,81 @@ def successive_binary_classifier(
 
             shaps[evttag] = shap_values
 
-            # LIME explanations
-            try:
-                # Get actual feature names (exclude P001.df_mean which isn't in the data)
-                actual_feature_names = [f for f in FEATURE_NAMES if f != 'P001.df_mean']
+            if compute_lime:
+                # LIME explanations
+                try:
+                    # Get actual feature names (exclude P001.df_mean which isn't in the data)
+                    actual_feature_names = [f for f in FEATURE_NAMES if f != 'P001.df_mean']
 
-                print(f"LIME debug for {evttag}: train shape={train_features.shape}, test shape={test_features.shape}, n_features={len(actual_feature_names)}")
+                    print(f"LIME debug for {evttag}: train shape={train_features.shape}, test shape={test_features.shape}, n_features={len(actual_feature_names)}")
 
-                # Clean training data (replace NaN with 0)
-                train_clean = np.nan_to_num(train_features, nan=0.0)
+                    # Clean training data (replace NaN with 0)
+                    train_clean = np.nan_to_num(train_features, nan=0.0)
 
-                # Normalize both train and test to ensure similar scales
-                # Compute robust statistics (use percentiles to avoid outlier influence)
-                train_mins = np.percentile(train_clean, 1, axis=0)
-                train_maxs = np.percentile(train_clean, 99, axis=0)
-                train_ranges = train_maxs - train_mins
-                # Avoid division by zero
-                train_ranges[train_ranges < 1e-10] = 1.0
+                    # Normalize both train and test to ensure similar scales
+                    # Compute robust statistics (use percentiles to avoid outlier influence)
+                    train_mins = np.percentile(train_clean, 1, axis=0)
+                    train_maxs = np.percentile(train_clean, 99, axis=0)
+                    train_ranges = train_maxs - train_mins
+                    # Avoid division by zero
+                    train_ranges[train_ranges < 1e-10] = 1.0
 
-                # Normalize to [0, 1] range
-                train_normalized = (train_clean - train_mins) / train_ranges
-                test_normalized = (test_features - train_mins) / train_ranges
+                    # Normalize to [0, 1] range
+                    train_normalized = (train_clean - train_mins) / train_ranges
+                    test_normalized = (test_features - train_mins) / train_ranges
 
-                # Clip to [0, 1] (in case test is outside training range)
-                test_normalized = np.clip(test_normalized, 0, 1)
+                    # Clip to [0, 1] (in case test is outside training range)
+                    test_normalized = np.clip(test_normalized, 0, 1)
 
-                # Use moderate kernel width on normalized data
-                kernel_width_val = np.sqrt(train_features.shape[1]) * 0.75
+                    # Use moderate kernel width on normalized data
+                    kernel_width_val = np.sqrt(train_features.shape[1]) * 0.75
 
-                # Check model prediction on test sample first
-                test_pred = model.predict_proba(test_features)[0]
-                print(f"  Model prediction for {evttag}: {test_pred}")
+                    # Check model prediction on test sample first
+                    test_pred = model.predict_proba(test_features)[0]
+                    print(f"  Model prediction for {evttag}: {test_pred}")
 
-                lime_explainer = LimeTabularExplainer(
-                    training_data=train_normalized,
-                    feature_names=actual_feature_names,
-                    class_names=['0', '1'],
-                    mode="classification",
-                    discretize_continuous=False,
-                    kernel_width=kernel_width_val,
-                    feature_selection='none',  # Use all features
-                    random_state=42  # reproducible perturbation sampling
-                )
+                    lime_explainer = LimeTabularExplainer(
+                        training_data=train_normalized,
+                        feature_names=actual_feature_names,
+                        class_names=['0', '1'],
+                        mode="classification",
+                        discretize_continuous=False,
+                        kernel_width=kernel_width_val,
+                        feature_selection='none',  # Use all features
+                        random_state=42  # reproducible perturbation sampling
+                    )
 
-                # Wrap prediction function to denormalize before passing to model
-                def debug_predict_fn(X_normalized):
-                    # Denormalize back to original scale
-                    X_original = X_normalized * train_ranges + train_mins
-                    preds = model.predict_proba(X_original)
-                    if len(preds) > 10:
-                        pred_class1 = preds[:, 1]
-                        print(f"    Sample predictions for {evttag}: min={pred_class1.min():.3f}, max={pred_class1.max():.3f}, std={pred_class1.std():.3f}")
-                    return preds
+                    # Wrap prediction function to denormalize before passing to model
+                    def debug_predict_fn(X_normalized):
+                        # Denormalize back to original scale
+                        X_original = X_normalized * train_ranges + train_mins
+                        preds = model.predict_proba(X_original)
+                        if len(preds) > 10:
+                            pred_class1 = preds[:, 1]
+                            print(f"    Sample predictions for {evttag}: min={pred_class1.min():.3f}, max={pred_class1.max():.3f}, std={pred_class1.std():.3f}")
+                        return preds
 
-                exp = lime_explainer.explain_instance(
-                    data_row=test_normalized.ravel(),
-                    predict_fn=debug_predict_fn,
-                    num_samples=5000,
-                    num_features=len(actual_feature_names)  # Return all 23 features
-                )
-                limes[evttag] = exp.as_list()
+                    exp = lime_explainer.explain_instance(
+                        data_row=test_normalized.ravel(),
+                        predict_fn=debug_predict_fn,
+                        num_samples=5000,
+                        num_features=len(actual_feature_names)  # Return all 23 features
+                    )
+                    limes[evttag] = exp.as_list()
 
-                # Debug: check actual values
-                non_zero_count = sum(1 for _, val in limes[evttag] if abs(val) > 1e-10)
-                print(f"LIME success for {evttag}: {len(limes[evttag])} feature importances, {non_zero_count} non-zero")
+                    # Debug: check actual values
+                    non_zero_count = sum(1 for _, val in limes[evttag] if abs(val) > 1e-10)
+                    print(f"LIME success for {evttag}: {len(limes[evttag])} feature importances, {non_zero_count} non-zero")
 
-                if non_zero_count > 0:
-                    print(f"  Sample non-zero values: {[(f, v) for f, v in limes[evttag] if abs(v) > 1e-10][:3]}")
-            except Exception as e:
-                # Handle any LIME failures gracefully
-                print(f"LIME failed for {evttag}: {e}. Using fallback.")
-                limes[evttag] = [(feat, 0.0) for feat in actual_feature_names if feat != 'P001.df_mean']
+                    if non_zero_count > 0:
+                        print(f"  Sample non-zero values: {[(f, v) for f, v in limes[evttag] if abs(v) > 1e-10][:3]}")
+                except Exception as e:
+                    # Handle any LIME failures gracefully
+                    print(f"LIME failed for {evttag}: {e}. Using fallback.")
+                    limes[evttag] = [(feat, 0.0) for feat in actual_feature_names if feat != 'P001.df_mean']
+
+            else:
+                limes[evttag] = []
 
             # Mean Decrease in Impurity (MDI) - Random Forest feature importances
             # Get the actual estimator if wrapped in search CV

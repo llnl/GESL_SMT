@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
+import warnings
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
@@ -22,8 +23,52 @@ small = [p for p in glob.glob("Classifiers/*.pickle") if os.path.getsize(p) < 10
 if small:
     raise SystemExit(f"{len(small)} classifier files are Git LFS pointers. Run: git lfs install && git lfs pull")
 
-app = Flask(__name__)
+# scikit-learn warns on every predict because DiCE/LIME pass DataFrames to models fitted on arrays; harmless
+warnings.filterwarnings("ignore", message="X has feature names")
+
+# Human-readable names for the 6 PMU channels and 4 statistics that make up the 23 features
+CHANNELS = {
+    "P001.df":   {"short": "RoCoF",             "long": "Rate of change of frequency", "unit": "Hz/s"},
+    "P001.f":    {"short": "Frequency",         "long": "System frequency",            "unit": "Hz"},
+    "P001.vp_m": {"short": "Voltage magnitude", "long": "Positive-sequence voltage magnitude", "unit": "pu"},
+    "P001.vp_a": {"short": "Voltage angle",     "long": "Positive-sequence voltage angle (unwrapped)", "unit": "deg"},
+    "P001.ip_m": {"short": "Current magnitude", "long": "Positive-sequence current magnitude", "unit": "pu"},
+    "P001.ip_a": {"short": "Current angle",     "long": "Positive-sequence current angle (unwrapped)", "unit": "deg"},
+}
+STATS = {
+    "mean":     {"short": "mean",       "long": "average level (after normalisation)"},
+    "std":      {"short": "spread",     "long": "standard deviation: how much the signal varies"},
+    "skew":     {"short": "asymmetry",  "long": "skewness: whether excursions go mostly one way"},
+    "kurtosis": {"short": "peakedness", "long": "kurtosis: how much of the variation comes from rare, sharp excursions"},
+}
+CHANNEL_ORDER = ["P001.f", "P001.df", "P001.vp_m", "P001.vp_a", "P001.ip_m", "P001.ip_a"]
+STAT_ORDER = ["mean", "std", "skew", "kurtosis"]
+
+def split_feature(name):
+    """'P001.vp_m_kurtosis' -> ('P001.vp_m', 'kurtosis')"""
+    ch, stat = name.rsplit("_", 1)
+    return ch, stat
+
+def display_name(name):
+    ch, stat = split_feature(name)
+    return f"{CHANNELS.get(ch, {}).get('short', ch)} {STATS.get(stat, {}).get('short', stat)}"
+
+def describe_feature(name):
+    return {"name": name, "display_name": display_name(name), "channel": split_feature(name)[0], "stat": split_feature(name)[1]}
+
+app = Flask(__name__, static_folder=None)
 CORS(app)
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+@app.route('/')
+@app.route('/viewer_v2.html')
+def viewer():
+    """Serve the viewer from the same origin as the API so no hard-coded host is needed."""
+    return send_from_directory(APP_DIR, 'viewer_v2.html')
+
+@app.route('/features/names', methods=['GET'])
+def feature_names_route():
+    return jsonify({"channels": CHANNELS, "stats": STATS, "channel_order": CHANNEL_ORDER, "stat_order": STAT_ORDER})
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
@@ -38,8 +83,10 @@ classifier_store = None  # Store for accessing models
 test_sample = None  # Store test sample for counterfactuals
 train_data_stats = None  # Store training data statistics for counterfactuals
 df_global = None #Store for CounterFactual
+current_raw = None  # raw time series of the loaded record (angles unwrapped), for waveform/sensitivity
+current_source = None
 
-def compute_features_from_raw(df_raw):
+def compute_features_from_raw(df_raw, unwrap_angles=True):
     """
     Compute statistical features from raw time-series data.
     Expected columns: Time, P001.df, P001.f, P001.ip_a, P001.ip_m, P001.vp_a, P001.vp_m
@@ -60,7 +107,7 @@ def compute_features_from_raw(df_raw):
         values = df_raw[col].values
 
         # Unwrap angle channels (columns ending in _a) to match training preprocessing
-        if col.endswith('_a'):
+        if unwrap_angles and col.endswith('_a'):
             values = np.rad2deg(np.unwrap(np.deg2rad(values)))
 
         # Z-score normalization: (x - mean) / std
@@ -176,22 +223,17 @@ def summarize(level, label):
             if len(shap_list) == len(actual_feature_names):
                 top_shap = sorted(zip(actual_feature_names, shap_list), key=lambda x: abs(x[1]), reverse=True)[:5]
                 prompt_parts.append("Top 5 SHAP values (feature importance):\n" +
-                                  "\n".join([f"  - {feat}: {val:.4f}" for feat, val in top_shap]))
-
-        # LIME values
-        if lime_vals:
-            lime_str = "\n".join([f"  - {feat}: {val:.4f}" for feat, val in lime_vals[:5]])
-            prompt_parts.append(f"Top 5 LIME values (local feature importance):\n{lime_str}")
+                                  "\n".join([f"  - {display_name(feat)}: {val:.4f}" for feat, val in top_shap]))
 
         # MDI values
         if mdi_list and len(mdi_list) == len(actual_feature_names):
             top_mdi = sorted(zip(actual_feature_names, mdi_list), key=lambda x: x[1], reverse=True)[:5]
             prompt_parts.append("Top 5 MDI values (Random Forest feature importance):\n" +
-                              "\n".join([f"  - {feat}: {val:.4f}" for feat, val in top_mdi]))
+                              "\n".join([f"  - {display_name(feat)}: {val:.4f}" for feat, val in top_mdi]))
 
         # Decision paths
         if path_list:
-            path_str = "\n".join([f"  - Depth {p.get('depth', 0)}: {p.get('feature_name', 'Unknown')} (support: {p.get('support_pct', 0):.1f}%)"
+            path_str = "\n".join([f"  - Depth {p.get('depth', 0)}: {display_name(p.get('feature_name', 'Unknown'))} (support: {p.get('support_pct', 0):.1f}%)"
                                  for p in path_list[:5]])
             prompt_parts.append(f"Top decision tree paths:\n{path_str}")
 
@@ -323,155 +365,95 @@ Predicted Label: {label}
         error_trace = traceback.format_exc()
         print(f"ERROR in /summarize: {error_trace}")
         return jsonify({"error": str(e), "trace": error_trace}), 500
+RAW_COLUMNS = ['P001.df', 'P001.f', 'P001.ip_a', 'P001.ip_m', 'P001.vp_a', 'P001.vp_m']
+DEMO_FILE = "Data/sample_pmu_raw.csv"
+
+def unwrap_angles(df_raw):
+    """Return a copy with the two angle channels unwrapped (degrees), as the feature code sees them."""
+    df = df_raw.copy()
+    for col in df.columns:
+        if col.endswith('_a'):
+            df[col] = np.rad2deg(np.unwrap(np.deg2rad(df[col].values.astype(float))))
+    return df
+
+def run_inference(df_raw, source_name):
+    """Shared pipeline for the demo and for uploads: features -> 3-level inference -> explanations."""
+    global current_data, actual_feature_names, sample_feature_values, classifier_store, test_sample, df_global, current_raw, current_source
+
+    missing = [c for c in RAW_COLUMNS if c not in df_raw.columns]
+    if missing:
+        raise ValueError(f"This looks like a feature table, not raw PMU data. Expected columns {RAW_COLUMNS}; "
+                         f"missing {missing}. Use {DEMO_FILE} as a template.")
+
+    features_df = compute_features_from_raw(df_raw)
+    X = features_df.values
+    actual_feature_names = list(features_df.columns)
+    sample_feature_values = features_df.iloc[0].to_dict()
+    test_sample = X
+    current_raw = unwrap_angles(df_raw)
+    current_source = source_name
+
+    df_train = pd.read_csv("./Data/pmu_transmission_features.csv")
+    df_global = df_train
+    prim_to_sec, sec_to_ter = {}, {}
+    for prim, sec, ter in zip(df_train['primary'], df_train['secondary'], df_train['tertiary']):
+        prim_to_sec.setdefault(prim, set()).add(sec)
+        sec_to_ter.setdefault(sec, set()).add(ter)
+    prim_to_sec = {k: sorted(v) for k, v in prim_to_sec.items()}
+    sec_to_ter = {k: sorted(v) for k, v in sec_to_ter.items()}
+    prim_labels = sorted(df_train["primary"].unique().tolist())
+    sec_labels = sorted(df_train["secondary"].unique().tolist())
+    ter_labels = sorted(df_train["tertiary"].unique().tolist())
+    X_train = df_train.iloc[:, 5:].values
+    if X.shape[1] != X_train.shape[1]:
+        raise ValueError(f"Feature mismatch: record has {X.shape[1]} features but training data has {X_train.shape[1]}")
+
+    cfg = PipelineConfig(primary_group="State", model=ModelConfig(model_type="rf", weighting=True), classifiers_dir="Classifiers")
+    store = ClassifierStore(cfg.classifiers_dir, "default")
+    classifier_store = store
+
+    results = {}
+    for level, labels in (("primary", prim_labels), ("secondary", sec_labels), ("tertiary", ter_labels)):
+        print(f"Running {level} inference...")
+        outputs, shap_v, lime_v, paths_v, mdi_v = successive_binary_classifier(
+            X, X_train, labels, store=store, level=level, compute_explanations=True,
+            compute_lime=os.getenv("GESL_COMPUTE_LIME") == "1")  # LIME is off by default: nothing displays it
+        results[level] = (outputs, {'shap': shap_v, 'lime': lime_v, 'paths': paths_v, 'mdi': mdi_v})
+
+    def format_predictions(outputs_dict):
+        preds = [{'label': l, 'confidence': float(c)} for l, c in outputs_dict.items()]
+        preds.sort(key=lambda x: x['confidence'], reverse=True)
+        return preds
+
+    current_data = {
+        'predictions': {lvl: format_predictions(results[lvl][0]) for lvl in results},
+        'explanations': {lvl: results[lvl][1] for lvl in results},
+        'mappings': {'prim_to_sec': prim_to_sec, 'sec_to_ter': sec_to_ter},
+        'source': source_name,
+    }
+    print(f"Inference complete for {source_name}")
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     """Handle file upload and process features"""
-    global current_data, actual_feature_names, sample_feature_values, classifier_store, test_sample, train_data_stats, df_global
-
     try:
-        # Check if file is present
         if 'file' not in request.files:
-            return jsonify({"error": "No file part"}), 400
-
+            return jsonify({"status": "error", "message": "No file part"}), 400
         file = request.files['file']
-
         if file.filename == '':
-            return jsonify({"error": "No selected file"}), 400
-
+            return jsonify({"status": "error", "message": "No selected file"}), 400
         if not file.filename.endswith('.csv'):
-            return jsonify({"error": "Only CSV files are allowed"}), 400
-
-        # Save uploaded file (sanitize filename)
+            return jsonify({"status": "error", "message": "Only CSV files are allowed"}), 400
         filename = re.sub(r'[^\w\s.-]', '', file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
-
         print(f"File uploaded: {filepath}")
-
-        # Read the uploaded CSV (raw time-series data)
         df_raw = pd.read_csv(filepath)
-        print(f"Raw data shape: {df_raw.shape}")
-        print(f"Raw data columns: {list(df_raw.columns)}")
-
-        # Validate that this is raw PMU data, not pre-computed features
-        required = ['P001.df', 'P001.f', 'P001.ip_a', 'P001.ip_m', 'P001.vp_a', 'P001.vp_m']
-        missing = [c for c in required if c not in df_raw.columns]
-        if missing:
-            return jsonify({
-                "status": "error",
-                "message": f"This looks like a feature table, not raw PMU data. Expected columns {required}; "
-                           f"missing {missing}. Use Data/sample_pmu_raw.csv as a template."
-            }), 400
-
-        # Compute features
-        features_df = compute_features_from_raw(df_raw)
-        print(f"Computed features shape: {features_df.shape}")
-        print(f"Computed features columns: {list(features_df.columns)}")
-
-        # Prepare X for inference
-        X = features_df.values  # Shape: (1, 23) - excludes P001.df_mean
-        actual_feature_names = list(features_df.columns)
-        sample_feature_values = features_df.iloc[0].to_dict()
-        test_sample = X
-
-        # Load hierarchical mappings
-        print("Loading hierarchical mappings...")
-        df_train = pd.read_csv("./Data/pmu_transmission_features.csv")
-        df_global = df_train
-
-        prim_to_sec = {}
-        sec_to_ter = {}
-        for _, row in df_train.iterrows():
-            prim = row['primary']
-            sec = row['secondary']
-            ter = row['tertiary']
-            if prim not in prim_to_sec:
-                prim_to_sec[prim] = set()
-            prim_to_sec[prim].add(sec)
-            if sec not in sec_to_ter:
-                sec_to_ter[sec] = set()
-            sec_to_ter[sec].add(ter)
-
-        prim_to_sec = {k: sorted(list(v)) for k, v in prim_to_sec.items()}
-        sec_to_ter = {k: sorted(list(v)) for k, v in sec_to_ter.items()}
-
-        prim_labels = sorted(df_train["primary"].unique().tolist())
-        sec_labels = sorted(df_train["secondary"].unique().tolist())
-        ter_labels = sorted(df_train["tertiary"].unique().tolist())
-
-        # Get training features for LIME (columns 5+ for 23 features)
-        X_train = df_train.iloc[:, 5:].values
-
-        print(f"X shape: {X.shape}, X_train shape: {X_train.shape}")
-
-        # Verify shapes match
-        if X.shape[1] != X_train.shape[1]:
-            return jsonify({
-                "error": f"Feature mismatch: uploaded file has {X.shape[1]} features but training data has {X_train.shape[1]} features"
-            }), 400
-
-        # Setup config and store
-        print("Creating config and store...")
-        cfg = PipelineConfig(
-            primary_group="State",
-            model=ModelConfig(model_type="rf", weighting=True),
-            classifiers_dir="Classifiers"
-        )
-        store = ClassifierStore(cfg.classifiers_dir, "default")
-        classifier_store = store
-        print("Config and store created successfully")
-
-        # Run inference for all three levels
-        print("Running primary inference...")
-        outputs_prim, shap_prim, lime_prim, paths_prim, mdi_prim = successive_binary_classifier(
-            X, X_train, prim_labels, store=store, level="primary", compute_explanations=True
-        )
-        print(f"Primary predictions: {len(outputs_prim)}")
-
-        print("Running secondary inference...")
-        outputs_sec, shap_sec, lime_sec, paths_sec, mdi_sec = successive_binary_classifier(
-            X, X_train, sec_labels, store=store, level="secondary", compute_explanations=True
-        )
-        print(f"Secondary predictions: {len(outputs_sec)}")
-
-        print("Running tertiary inference...")
-        outputs_ter, shap_ter, lime_ter, paths_ter, mdi_ter = successive_binary_classifier(
-            X, X_train, ter_labels, store=store, level="tertiary", compute_explanations=True
-        )
-        print(f"Tertiary predictions: {len(outputs_ter)}")
-
-        # Format predictions
-        def format_predictions(outputs_dict):
-            predictions = []
-            for label, confidence in outputs_dict.items():
-                predictions.append({
-                    'label': label,
-                    'confidence': float(confidence)
-                })
-            predictions.sort(key=lambda x: x['confidence'], reverse=True)
-            return predictions
-
-        # Store globally
-        current_data = {
-            'predictions': {
-                'primary': format_predictions(outputs_prim),
-                'secondary': format_predictions(outputs_sec),
-                'tertiary': format_predictions(outputs_ter)
-            },
-            'explanations': {
-                'primary': {'shap': shap_prim, 'lime': lime_prim, 'paths': paths_prim, 'mdi': mdi_prim},
-                'secondary': {'shap': shap_sec, 'lime': lime_sec, 'paths': paths_sec, 'mdi': mdi_sec},
-                'tertiary': {'shap': shap_ter, 'lime': lime_ter, 'paths': paths_ter, 'mdi': mdi_ter}
-            },
-            'mappings': {
-                'prim_to_sec': prim_to_sec,
-                'sec_to_ter': sec_to_ter
-            }
-        }
-
-        print("Upload and inference complete!")
+        print(f"Raw data shape: {df_raw.shape}, columns: {list(df_raw.columns)}")
+        run_inference(df_raw, filename)
         return jsonify({"status": "success", "filename": filename})
-
+    except ValueError as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
     except Exception as e:
         import traceback
         error_trace = traceback.format_exc()
@@ -480,101 +462,100 @@ def upload_file():
 
 @app.route('/load', methods=['POST'])
 def load_sample():
-    """Run inference on first sample and store results"""
-    global current_data, actual_feature_names, sample_feature_values, classifier_store, test_sample, train_data_stats, df_global
-
+    """Demo: run the bundled sample record through exactly the same pipeline as an upload."""
     try:
-        print("Loading data and mappings...")
-        # Load data
-        df, X, X_train, prim_labels, sec_labels, ter_labels, prim_to_sec, sec_to_ter, sample_values = load_data_and_mappings()
-
-        # Store actual feature names and sample values (from column 5 onwards)
-        actual_feature_names = df.columns[5:].tolist()
-        sample_feature_values = sample_values
-        test_sample = X  # Store test sample
-
-        # Store training data statistics for counterfactuals (use nanmean to handle NaN)
-        df_global = df
-
-        # Replace any remaining NaN with safe defaults
-
-        print(f"Data loaded. Shape: {df.shape}, X shape: {X.shape}")
-        print(f"Feature names: {actual_feature_names[:5]}... (total: {len(actual_feature_names)})")
-        print(f"Primary labels: {prim_labels}")
-        print(f"Secondary labels count: {len(sec_labels)}")
-        print(f"Tertiary labels count: {len(ter_labels)}")
-
-        # Setup config and store
-        print("Creating config and store...")
-        cfg = PipelineConfig(
-            primary_group="State",
-            model=ModelConfig(model_type="rf", weighting=True),
-            classifiers_dir="Classifiers"
-        )
-        store = ClassifierStore(cfg.classifiers_dir, "default")
-        classifier_store = store  # Store globally for counterfactual generation
-        print("Config and store created successfully")
-
-        # Run inference for all three levels (WITH explanations for SHAP, LIME, MDI)
-        print("Running primary inference...")
-        outputs_prim, shap_prim, lime_prim, paths_prim, mdi_prim = successive_binary_classifier(
-            X, X_train, prim_labels, store=store, level="primary", compute_explanations=True
-        )
-        print(f"Primary predictions: {len(outputs_prim)}")
-
-        print("Running secondary inference...")
-        outputs_sec, shap_sec, lime_sec, paths_sec, mdi_sec = successive_binary_classifier(
-            X, X_train, sec_labels, store=store, level="secondary", compute_explanations=True
-        )
-        print(f"Secondary predictions: {len(outputs_sec)}")
-
-        print("Running tertiary inference...")
-        outputs_ter, shap_ter, lime_ter, paths_ter, mdi_ter = successive_binary_classifier(
-            X, X_train, ter_labels, store=store, level="tertiary", compute_explanations=True
-        )
-        print(f"Tertiary predictions: {len(outputs_ter)}")
-
-        # Format predictions
-        def format_predictions(outputs_dict):
-            predictions = []
-            for label, confidence in outputs_dict.items():
-                predictions.append({
-                    'label': label,
-                    'confidence': float(confidence)
-                })
-            # Sort by confidence descending
-            predictions.sort(key=lambda x: x['confidence'], reverse=True)
-            return predictions
-
-        # Store globally
-        current_data = {
-            'predictions': {
-                'primary': format_predictions(outputs_prim),
-                'secondary': format_predictions(outputs_sec),
-                'tertiary': format_predictions(outputs_ter)
-            },
-            'explanations': {
-                'primary': {'shap': shap_prim, 'lime': lime_prim, 'paths': paths_prim, 'mdi': mdi_prim},
-                'secondary': {'shap': shap_sec, 'lime': lime_sec, 'paths': paths_sec, 'mdi': mdi_sec},
-                'tertiary': {'shap': shap_ter, 'lime': lime_ter, 'paths': paths_ter, 'mdi': mdi_ter}
-            },
-            'mappings': {
-                'prim_to_sec': prim_to_sec,
-                'sec_to_ter': sec_to_ter
-            }
-        }
-
-        print("Load complete!")
-        print(f"Primary SHAP labels: {list(shap_prim.keys())}")
-        print(f"Secondary SHAP labels count: {len(shap_sec)}")
-        print(f"Tertiary SHAP labels count: {len(shap_ter)}")
-        return jsonify({"status": "success"})
-
+        df_raw = pd.read_csv(DEMO_FILE)
+        run_inference(df_raw, os.path.basename(DEMO_FILE))
+        return jsonify({"status": "success", "filename": os.path.basename(DEMO_FILE)})
     except Exception as e:
         import traceback
         error_trace = traceback.format_exc()
         print(f"ERROR in /load: {error_trace}")
         return jsonify({"status": "error", "message": str(e), "trace": error_trace}), 500
+
+def _decimate(t, v, max_points=1500):
+    """Min/max bucket decimation: keeps peaks that a plain stride would drop."""
+    n = len(v)
+    if n <= max_points:
+        return t.tolist(), v.tolist()
+    buckets = max_points // 2
+    edges = np.linspace(0, n, buckets + 1).astype(int)
+    tt, vv = [], []
+    for a, b in zip(edges[:-1], edges[1:]):
+        if b <= a: continue
+        seg = v[a:b]; i_min, i_max = a + int(np.argmin(seg)), a + int(np.argmax(seg))
+        for i in sorted((i_min, i_max)):
+            tt.append(float(t[i])); vv.append(float(v[i]))
+    return tt, vv
+
+@app.route('/waveform', methods=['GET'])
+def waveform():
+    """The loaded record as time series (angles unwrapped), decimated for display, with per-channel statistics."""
+    if current_raw is None:
+        return jsonify({"error": "No data loaded. Call /load or /upload first"}), 400
+    df = current_raw
+    t = df['Time'].values.astype(float) if 'Time' in df.columns else np.arange(len(df), dtype=float)
+    out = {"source": current_source, "n_samples": int(len(df)), "duration": float(t[-1] - t[0]), "channels": []}
+    for ch in CHANNEL_ORDER:
+        if ch not in df.columns: continue
+        v = df[ch].values.astype(float)
+        mean, std = float(np.mean(v)), float(np.std(v))
+        z = (v - mean) / std if std > 1e-12 else np.zeros_like(v)
+        # samples with |z| >= 3 are what drives kurtosis (z^4) and skew (z^3); cap the list for transfer
+        idx = np.where(np.abs(z) >= 3)[0]
+        if len(idx) > 60:
+            idx = idx[np.argsort(-np.abs(z[idx]))[:60]]
+        tt, vv = _decimate(t, v)
+        feats = {st: float(sample_feature_values.get(f"{ch}_{st}", float('nan'))) for st in STAT_ORDER if f"{ch}_{st}" in sample_feature_values}
+        out["channels"].append({
+            "name": ch, **CHANNELS[ch], "t": tt, "v": vv,
+            "mean": mean, "std": std, "min": float(v.min()), "max": float(v.max()),
+            "extremes": [[float(t[i]), float(v[i]), float(z[i])] for i in sorted(idx.tolist())],
+            "features": feats,
+        })
+    return jsonify(out)
+
+@app.route('/sensitivity/<level>/<label>', methods=['GET'])
+def sensitivity(level, label):
+    """Time-localised sensitivity by occlusion: blank one time window (all channels, and each channel alone),
+    recompute the 23 features and see how much the selected classifier's probability drops."""
+    if current_raw is None or classifier_store is None:
+        return jsonify({"error": "No data loaded. Call /load or /upload first"}), 400
+    try:
+        n_windows = int(request.args.get('windows', 24))
+        df = current_raw
+        t = df['Time'].values.astype(float) if 'Time' in df.columns else np.arange(len(df), dtype=float)
+        model = classifier_store.load(level, label)
+        if hasattr(model, 'best_estimator_'): model = model.best_estimator_
+        chans = [c for c in CHANNEL_ORDER if c in df.columns]
+        base = df[chans].copy()
+        def prob(frame):
+            f = compute_features_from_raw(frame, unwrap_angles=False)
+            return float(model.predict_proba(f.values)[0][1])
+        p0 = prob(base)
+        n = len(base); edges = np.linspace(0, n, n_windows + 1).astype(int)
+        windows, drop_all, drop_ch = [], [], {c: [] for c in chans}
+        for a, b in zip(edges[:-1], edges[1:]):
+            windows.append([float(t[a]), float(t[min(b, n - 1)])])
+            def occlude(cols):
+                fr = base.copy()
+                for c in cols:
+                    v = fr[c].values.copy()
+                    v0 = v[a - 1] if a > 0 else v[b - 1]; v1 = v[b] if b < n else v[a]
+                    v[a:b] = np.linspace(v0, v1, b - a)   # replace the window with a straight bridge
+                    fr[c] = v
+                return fr
+            drop_all.append(p0 - prob(occlude(chans)))
+            for c in chans:
+                drop_ch[c].append(p0 - prob(occlude([c])))
+        return jsonify({"level": level, "label": label, "p_original": p0, "windows": windows,
+                        "drop_all": drop_all, "drop_by_channel": drop_ch,
+                        "note": "Positive drop = removing that part of the record lowers the model's confidence in this label."})
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"ERROR in /sensitivity: {error_trace}")
+        return jsonify({"error": str(e), "trace": error_trace}), 500
 
 @app.route('/predictions', methods=['GET'])
 def get_predictions():
@@ -719,6 +700,7 @@ def get_explanations(level, label):
 
                 path_steps.append({
                     'feature_name': feature_name,
+                    'display_name': display_name(feature_name),
                     'threshold': threshold,
                     'actual_value': actual_value,
                     'direction': direction,
@@ -732,7 +714,7 @@ def get_explanations(level, label):
         for i, (feature_name, shap_val) in enumerate(zip(actual_feature_names, shap_values)):
             mdi_val = mdi_array[i] if i < len(mdi_array) else 0.0
             features.append({
-                'name': feature_name,
+                **describe_feature(feature_name),
                 'shap': float(shap_val),
                 'lime': lime_values.get(feature_name, 0.0),
                 'mdi': float(mdi_val)
@@ -741,7 +723,11 @@ def get_explanations(level, label):
         return jsonify({
             'label': label,
             'features': features,
-            'path': path_steps
+            'path': path_steps,
+            'channel_order': CHANNEL_ORDER,
+            'stat_order': STAT_ORDER,
+            'channels': {c: CHANNELS[c] for c in CHANNEL_ORDER},
+            'stats': STATS
         })
 
     except Exception as e:
@@ -847,6 +833,7 @@ def get_counterfactual(level, label):
             if abs(change_val) > 1e-6:  # Feature changed
                 changes.append({
                     'feature': feature,
+                    'display_name': display_name(feature),
                     'original': float(original_val),
                     'counterfactual': float(cf_val),
                     'change': float(change_val)
