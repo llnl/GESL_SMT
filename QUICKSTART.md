@@ -9,7 +9,7 @@ clean_implementation/
 ├── src/lcn/              # Core classification library (11 modules)
 ├── server.py             # Flask server with file upload
 ├── demo_server.py        # Demo server with pre-loaded data
-├── viewer_v2.html           # Interactive web UI with 5 XAI methods
+├── viewer_v2.html           # Interactive web UI (served by the Flask app at http://localhost:5001/)
 ├── Data/                 # Training data
 ├── Classifiers/          # Pre-trained models
 ├── Uploads/              # User uploads directory
@@ -52,7 +52,7 @@ clean_implementation/
 python demo_server.py
 ```
 - Regenerates `xai.json` with predictions from the first training sample
-- Open `viewer_v2.html` in your browser
+- Open http://localhost:5001/ in your browser (the server serves the viewer; opening viewer_v2.html from disk also works)
 - Click "LOAD DEMO" button to load the pre-computed results
 - Explore the hierarchical classifications and XAI explanations
 
@@ -61,7 +61,7 @@ python demo_server.py
 python server.py
 ```
 - Server starts on `http://localhost:5001`
-- Open `viewer_v2.html` in your browser
+- Open http://localhost:5001/ in your browser (the server serves the viewer; opening viewer_v2.html from disk also works)
 - Upload your CSV file (must have 23 features)
 - View predictions and explanations
 
@@ -76,7 +76,7 @@ python server.py
 Click on any prediction to see:
 
 1. **SHAP** - Game theory-based feature importance
-2. **LIME** - Local model approximation
+2. **LIME** - computed only when `GESL_COMPUTE_LIME=1` is set; not shown in the viewer
 3. **MDI** - Random Forest feature importance
 4. **Decision Path** - Tree traversal with information gain
 5. **Counterfactual** - Minimum changes to flip prediction

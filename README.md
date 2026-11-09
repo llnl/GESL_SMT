@@ -2,7 +2,7 @@
 
 Hierarchical classification system for power grid event signatures with explainable AI (XAI) methods.
 
-GESL is a multi-level classification framework that builds and deploys machine learning models for power grid event analysis. It works with PMU (Phasor Measurement Unit) data and provides explainable predictions through multiple XAI methods including SHAP, LIME, and feature importance visualization.
+GESL is a multi-level classification framework that builds and deploys machine learning models for power grid event analysis. It works with PMU (Phasor Measurement Unit) data and provides explainable predictions through SHAP (per record), random-forest feature importance (global), merged decision paths, a what-if example, and a time-localised sensitivity view on the input waveform.
 
 See the [QUICKSTART.md](QUICKSTART.md) for a quick guide to getting started.
 
@@ -54,13 +54,13 @@ pip install -r requirements.txt
 ```bash
 python server.py
 ```
-Then open `viewer_v2.html` in your browser and upload your CSV file.
+Then open http://localhost:5001/ in your browser and upload your CSV file (raw PMU time series; `Data/sample_pmu_raw.csv` is the template).
 
 #### Demo Mode (Pre-computed Results)
 ```bash
 python demo_server.py
 ```
-This regenerates `xai.json` with predictions and XAI explanations from the first sample in the training data. Then open `viewer_v2.html` in your browser and click "LOAD DEMO" to view the pre-computed classifications.
+This regenerates `xai.json` with predictions and XAI explanations from the first sample in the training data. In the viewer, "LOAD DEMO" runs `Data/sample_pmu_raw.csv` through the same pipeline as an upload.
 
 #### No Server
 
