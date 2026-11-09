@@ -816,7 +816,8 @@ def get_counterfactual(level, label):
         dice_exp = exp.generate_counterfactuals(
             query_df,
             total_CFs=1,
-            desired_class="opposite"
+            desired_class="opposite",
+            random_seed=42
         )
 
         # Extract counterfactual example

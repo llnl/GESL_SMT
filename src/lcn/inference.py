@@ -213,7 +213,8 @@ def successive_binary_classifier(
                     mode="classification",
                     discretize_continuous=False,
                     kernel_width=kernel_width_val,
-                    feature_selection='none'  # Use all features
+                    feature_selection='none',  # Use all features
+                    random_state=42  # reproducible perturbation sampling
                 )
 
                 # Wrap prediction function to denormalize before passing to model
