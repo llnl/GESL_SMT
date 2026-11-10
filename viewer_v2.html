@@ -1088,6 +1088,52 @@
         .fgrid-legend .bar { flex: 0 0 140px; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--oppose), #f1f3f2 50%, var(--support)); }
         .fgrid-reading { font-size: 13px; color: var(--ink); background: white; border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; margin-top: 14px; line-height: 1.5; }
 
+        /* raw data names under readable names */
+        .fraw { display: block; font-size: 10px; font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--muted); font-weight: 400; line-height: 1.25; margin-top: 1px; }
+        .wave-panel .wp-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+
+        /* decision path figure */
+        .dp-legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+        .dp-legend span::before { content: ''; display: inline-block; width: 12px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: -1px; }
+        .dp-legend .l-pos::before { background: var(--support); opacity: .75; }
+        .dp-legend .l-neg::before { background: #c8ced0; }
+        .dp-legend .l-split::before { background: transparent; border-left: 2px dashed var(--ink); width: 0; height: 12px; border-radius: 0; vertical-align: -2px; }
+        .dp-legend .l-rec::before { background: var(--accent); border-radius: 50%; width: 10px; }
+        .dp-legend .l-side::before { background: var(--accent-light); border: 1px solid var(--accent-mid); }
+        .dp-node { display: grid; grid-template-columns: 30px 340px 1fr; gap: 14px; align-items: center; background: white; border-radius: 10px; padding: 10px 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); border-left: 4px solid var(--accent); }
+        @media (max-width: 900px) { .dp-node { grid-template-columns: 30px 1fr; } .dp-node .dp-text { grid-column: 1 / -1; } }
+        .dp-num { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: white; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+        .dp-node svg { width: 100%; height: auto; display: block; }
+        .dp-text { font-size: 13px; color: var(--ink); line-height: 1.45; }
+        .dp-text .dp-feat { font-weight: 700; font-size: 14px; color: var(--accent-dark); margin-bottom: 4px; }
+        .dp-dir { display: inline-block; padding: 0 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+        .dp-dir.left { background: #eaf1fb; color: #1f4e8c; } .dp-dir.right { background: #fdebe3; color: #9a3b12; }
+        .dp-text .dp-meta { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+        .dp-link { height: 26px; margin-left: 30px; border-left: 2px solid var(--accent-mid); position: relative; display: flex; align-items: center; padding-left: 12px; font-size: 11.5px; color: var(--muted); }
+        .dp-link::after { content: ''; position: absolute; left: -5px; bottom: -2px; border: 4px solid transparent; border-top: 6px solid var(--accent-mid); }
+        .dp-leaf { margin-left: 30px; display: inline-block; background: var(--accent-light); border: 1px solid var(--accent-mid); color: var(--accent-dark); border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 600; }
+
+        /* what-if example */
+        .wi-head { background: white; border-radius: 10px; padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 14px; }
+        .wi-title { font-size: 16px; font-weight: 700; color: var(--ink); }
+        .wi-title b { color: var(--accent-dark); }
+        .wi-bars { display: grid; grid-template-columns: 150px 1fr 1fr; gap: 8px 14px; align-items: center; margin-top: 12px; font-size: 12.5px; }
+        .wi-bars .h { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+        .wi-bar { height: 16px; background: #eef1ef; border-radius: 8px; position: relative; overflow: hidden; }
+        .wi-bar > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 8px; }
+        .wi-bar::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background: var(--muted); opacity: .45; }
+        .wi-bar span { position: absolute; right: 7px; top: 0; font-size: 11px; font-weight: 700; color: var(--ink); line-height: 16px; }
+        .wi-verdict { margin-top: 12px; font-size: 13px; padding: 8px 12px; border-radius: 6px; line-height: 1.45; }
+        .wi-verdict.ok { background: var(--accent-light); color: var(--accent-dark); }
+        .wi-verdict.no { background: #fdebe3; color: #9a3b12; }
+        .wi-note { font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.45; }
+        .wi-list { background: white; border-radius: 10px; padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+        .wi-list-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 10px; }
+        .wi-change { padding: 10px 14px; margin-bottom: 10px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid var(--accent-mid); display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center; }
+        .wi-change .nm { font-weight: 700; font-size: 14px; color: var(--ink); }
+        .wi-change .delta { font-size: 18px; font-weight: 700; }
+        .wi-change .vals { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+
         @keyframes dots {
             0%, 20% { content: '.'; }
             40% { content: '..'; }
@@ -1218,6 +1264,7 @@
         let currentSecondary = null;
         let currentXAIType = 'grid'; // Remember last XAI type
         let currentExplanationData = null; // Store current explanation data
+        let explReq = 0, cfReq = 0;   // request tokens: a newer click invalidates responses still in flight
         let currentLevel = null; // Store current level for counterfactual
         let currentLabel = null; // Store current label for counterfactual
         let currentSlideIndex = 0;
@@ -1449,6 +1496,7 @@
             labelSpan.textContent = label;
             currentLevel = level;  // Store for counterfactual
             currentLabel = label;  // Store for counterfactual
+            const myReq = ++explReq; cfReq++;
 
             // Show loading
             chartBars.innerHTML = '<div class="loading">Loading explanations...</div>';
@@ -1458,6 +1506,7 @@
                 // Fetch explanations (includes SHAP, LIME, and MDI)
                 const response = await fetch(`${API}/explanations/${level}/${encodeURIComponent(label)}`);
                 const data = await response.json();
+                if (myReq !== explReq) return;   // the user clicked something else meanwhile
 
                 if (data.error) {
                     chartBars.innerHTML = `<div class="loading">Error: ${data.error}</div>`;
@@ -1511,83 +1560,85 @@
                 renderFeatureGrid(currentExplanationData);
             } else if (type === 'path') {
                 xaiExplanationTitle.textContent = 'How to read the decision path';
-                xaiExplanationText.textContent = 'The random forest is hundreds of trees that each ask a chain of yes/no questions. These are the ten questions, merged across trees, that gained the most information for this record. Each shows the feature, the split value the trees used, this record\'s value, and how many trees agreed.';
+                xaiExplanationText.textContent = `The random forest is ${currentExplanationData.n_trees || 'many'} trees that each ask a chain of yes/no questions about the 23 features. These are the ten questions, merged across trees, that gained the most information for this record. Each box shows where this record (green marker) sits in the training distribution of that feature: blue bars are training records of this class, grey bars all other records, the dashed line is the split value and the shaded side is the branch this record took.`;
                 explanationSubtitle.textContent = 'The ten most informative questions the trees asked about this record';
-                renderDecisionPath(currentExplanationData.path);
+                renderDecisionPath(currentExplanationData);
             } else if (type === 'counterfactual') {
                 xaiExplanationTitle.textContent = 'How to read the what-if example';
-                xaiExplanationText.textContent = 'A random search looks for a change to the 23 features that flips the model\'s decision. It returns one example, not the smallest or most physical change, so read it as "the model would decide differently if this statistic looked like that", not as a recipe.';
-                explanationSubtitle.textContent = 'One example of feature values that would flip this decision';
+                xaiExplanationText.textContent = 'The winner at each level is the label whose yes/no forest scores highest. This view takes the runner-up (or the label you clicked, if it is not the winner) and searches for feature values under which it would overtake the winner. It returns one example, not the smallest or most physical change, so read it as "the decision would change if these statistics looked like that", not as a recipe.';
+                explanationSubtitle.textContent = 'One example of feature values under which another label would win';
                 renderCounterfactual(currentLevel, currentLabel);
             }
         }
 
-        function renderDecisionPath(pathSteps) {
+        const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+        const fmtv = v => Math.abs(v) >= 1000 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(3);
+        const pct = v => v == null ? 'n/a' : `${(v * 100).toFixed(v * 100 < 10 ? 1 : 0)} %`;
+        function nameHtml(display, raw) { return `${display}<span class="fraw">${raw}</span>`; }
+
+        function pathNodeSvg(step) {
+            // one decision-path node: training distribution of the feature (this class vs the rest), split value, this record
+            const h = step.hist; if (!h) return '';
+            const W = 340, H = 122, x0 = 8, x1 = W - 8, y0 = 22, y1 = H - 30;
+            const lo = h.edges[0], hi = h.edges[h.edges.length - 1];
+            const X = v => x0 + (Math.min(Math.max(v, lo), hi) - lo) / (hi - lo) * (x1 - x0);
+            const peak = Math.max(...h.pos, ...h.neg) || 1;
+            const Y = f => y1 - f / peak * (y1 - y0);
+            const support = cssVar('--support') || '#2a78d6';
+            const xt = X(step.threshold), xv = X(step.actual_value);
+            let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="training distribution of ${step.display_name}">`;
+            o += step.direction === 'left'
+                ? `<rect x="${x0}" y="${y0}" width="${xt - x0}" height="${y1 - y0}" fill="var(--accent-light)"/>`
+                : `<rect x="${xt}" y="${y0}" width="${x1 - xt}" height="${y1 - y0}" fill="var(--accent-light)"/>`;
+            for (let i = 0; i < h.pos.length; i++) {
+                const a = X(h.edges[i]), bw = Math.max(0.5, X(h.edges[i + 1]) - a - 0.6);
+                if (h.neg[i] > 0) o += `<rect x="${a}" y="${Y(h.neg[i])}" width="${bw}" height="${y1 - Y(h.neg[i])}" fill="#c8ced0" opacity=".9"/>`;
+                if (h.pos[i] > 0) o += `<rect x="${a}" y="${Y(h.pos[i])}" width="${bw}" height="${y1 - Y(h.pos[i])}" fill="${support}" opacity=".7"/>`;
+            }
+            o += `<line x1="${x0}" x2="${x1}" y1="${y1}" y2="${y1}" stroke="var(--muted)" stroke-width="1"/>`;
+            o += `<line x1="${xt}" x2="${xt}" y1="${y0 - 4}" y2="${y1}" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+            const ta = xt < x0 + 50 ? 'start' : xt > x1 - 50 ? 'end' : 'middle';
+            o += `<text x="${xt}" y="${y0 - 8}" font-size="10" text-anchor="${ta}" fill="var(--ink)">split ${fmtv(step.threshold)}</text>`;
+            const va = xv < x0 + 70 ? 'start' : xv > x1 - 70 ? 'end' : 'middle';
+            o += `<line x1="${xv}" x2="${xv}" y1="${y0}" y2="${y1 + 6}" stroke="var(--accent)" stroke-width="2"/>`;
+            o += `<circle cx="${xv}" cy="${y1 + 9}" r="4" fill="var(--accent)"/>`;
+            o += `<text x="${xv}" y="${y1 + 24}" font-size="10" font-weight="700" text-anchor="${va}" fill="var(--accent-dark)">this record ${fmtv(step.actual_value)}${h.value_off_scale ? ' (off scale)' : ''}</text>`;
+            const dec = Math.min(6, Math.max(3, Math.ceil(-Math.log10(Math.max(hi - lo, 1e-9))) + 1));
+            const fax = v => Math.abs(v) >= 1000 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(dec);
+            if (va !== 'start') o += `<text x="${x0}" y="${y1 + 24}" font-size="9" fill="var(--muted)">${fax(lo)}</text>`;
+            if (va !== 'end') o += `<text x="${x1}" y="${y1 + 24}" font-size="9" text-anchor="end" fill="var(--muted)">${fax(hi)}</text>`;
+            return o + '</svg>';
+        }
+
+        function renderDecisionPath(data) {
             const chartBars = document.getElementById('chartBars');
             chartBars.innerHTML = '';
-
+            const pathSteps = data && data.path, label = data && data.label;
             if (!pathSteps || pathSteps.length === 0) {
                 chartBars.innerHTML = '<div class="loading">No decision path available</div>';
                 return;
             }
-
-            const pathContainer = document.createElement('div');
-            pathContainer.className = 'path-steps';
-
-            pathSteps.forEach((step, index) => {
-                const stepDiv = document.createElement('div');
-                stepDiv.className = 'path-step';
-
-                const header = document.createElement('div');
-                header.className = 'path-step-header';
-
-                const stepNumber = document.createElement('span');
-                stepNumber.className = 'path-step-number';
-                stepNumber.textContent = index + 1;
-
-                const importance = document.createElement('span');
-                importance.className = 'path-step-importance';
-                importance.textContent = `Amount of information gained by decision: ${(step.gain || 0).toFixed(4)}`;
-
-                header.appendChild(stepNumber);
-                header.appendChild(importance);
-
-                const decision = document.createElement('div');
-                decision.className = 'path-step-decision';
-
-                const directionSymbol = step.direction === 'left' ? '≤' : '>';
-                const directionClass = step.direction === 'left' ? 'left' : 'right';
-
-                decision.innerHTML = `
-                    <span class="path-step-feature" title="${step.feature_name}">${step.display_name || step.feature_name}</span>
-                    is <span class="path-step-value">${step.actual_value.toFixed(4)}</span>, which is
-                    <span class="path-step-direction ${directionClass}">${step.direction === 'left' ? 'at or below' : 'above'}</span>
-                    the split value <span class="path-step-value">${step.threshold.toFixed(4)}</span>
-                `;
-
-                const support = document.createElement('div');
-                support.className = 'path-step-support';
-                support.textContent = `${step.support_pct.toFixed(1)}% of trees agreed on this decision at depth ${step.depth}`;
-
-                stepDiv.appendChild(header);
-                stepDiv.appendChild(decision);
-                stepDiv.appendChild(support);
-
-                pathContainer.appendChild(stepDiv);
-
-                // Animate
-                setTimeout(() => {
-                    stepDiv.style.opacity = '0';
-                    stepDiv.style.transform = 'translateX(-20px)';
-                    setTimeout(() => {
-                        stepDiv.style.transition = 'all 0.3s ease';
-                        stepDiv.style.opacity = '1';
-                        stepDiv.style.transform = 'translateX(0)';
-                    }, 50);
-                }, index * 100);
+            const confEl = document.querySelector(`#${currentLevel}Content .prediction-item[data-label="${label}"] .prediction-confidence`);
+            const conf = confEl ? confEl.textContent : '';
+            let html = `<div class="dp-legend">
+                <span class="l-pos">training records of ${label}</span><span class="l-neg">all other training records</span>
+                <span class="l-split">split value</span><span class="l-rec">this record</span><span class="l-side">branch this record took</span></div>`;
+            pathSteps.forEach((step, i) => {
+                const h = step.hist || {}, left = step.direction === 'left';
+                const sideRate = left ? h.left_rate : h.right_rate, nSide = left ? h.n_left : h.n_right;
+                html += `<div class="dp-node">
+                    <div class="dp-num">${i + 1}</div>
+                    <div>${pathNodeSvg(step)}</div>
+                    <div class="dp-text">
+                        <div class="dp-feat" title="${step.feature_name}">${nameHtml(step.display_name || step.feature_name, step.feature_name)}</div>
+                        <div>This record: <b>${fmtv(step.actual_value)}</b>, <span class="dp-dir ${left ? 'left' : 'right'}">${left ? 'at or below' : 'above'}</span> the split value <b>${fmtv(step.threshold)}</b>.</div>
+                        ${h.n_pos != null ? `<div>Of the ${(nSide || 0).toLocaleString()} training records on this side, <b>${pct(sideRate)}</b> are ${label} (overall ${pct(h.base_rate)}).</div>` : ''}
+                        <div class="dp-meta">Asked at depth ${step.depth} by ${step.support_pct.toFixed(0)} % of the trees still deciding there · information gain ${(step.gain || 0).toFixed(3)}</div>
+                    </div></div>`;
+                if (i < pathSteps.length - 1) html += `<div class="dp-link">takes the ${left ? 'left' : 'right'} branch, next question</div>`;
             });
-
-            chartBars.appendChild(pathContainer);
+            html += `<div class="dp-link">after all questions</div><div class="dp-leaf">Result: the ${label} forest${data.n_trees ? ` (${data.n_trees} trees)` : ''} votes ${conf || '…'} yes</div>`;
+            chartBars.innerHTML = html;
         }
 
         // ---------- feature grid (SHAP per record, MDI as the model's general priorities)
@@ -1608,9 +1659,9 @@
             const label = data.label;
 
             function table(kind) {
-                let h = `<table class="fgrid"><tr><th></th>${stOrder.map(st => `<th>${STAT_LABEL[st]}</th>`).join('')}</tr>`;
+                let h = `<table class="fgrid"><tr><th></th>${stOrder.map(st => `<th>${STAT_LABEL[st]}<span class="fraw">_${st}</span></th>`).join('')}</tr>`;
                 chOrder.forEach(ch => {
-                    h += `<tr><th class="row" title="${chInfo[ch].long}">${chInfo[ch].short}</th>`;
+                    h += `<tr><th class="row" title="${chInfo[ch].long}">${chInfo[ch].short}<span class="fraw">${ch}</span></th>`;
                     stOrder.forEach(st => {
                         const f = byKey[`${ch}_${st}`];
                         if (!f) { h += `<td class="na" title="not a model input">n/a</td>`; return; }
@@ -1631,7 +1682,7 @@
             const pos = top.filter(f => f.shap > 0), neg = top.filter(f => f.shap < 0);
             const sentence = (pos.length ? `Strongest evidence for <b>${label}</b>: ${pos.map(f => `${f.display_name} (+${f.shap.toFixed(3)})`).join(', ')}. ` : '') +
                              (neg.length ? `Pushing against it: ${neg.map(f => `${f.display_name} (${f.shap.toFixed(3)})`).join(', ')}. ` : '') +
-                             `Hover a cell for the raw feature name.`;
+                             `Grey text gives the column names in the data: row code + column suffix, for example <code>P001.f_skew</code>.`;
             chartBars.innerHTML = `
                 <div class="fgrid-wrap">
                     <div>
@@ -1673,7 +1724,7 @@
                 const feats = ch.features || {};
                 const fx = Object.keys(feats).filter(k => k === 'skew' || k === 'kurtosis').map(k => `${STAT_LABEL[k]} ${feats[k].toFixed(2)}`).join(' · ');
                 panel.innerHTML = `
-                    <div class="wp-title"><span title="${ch.long}">${ch.short} <span style="font-weight:400;color:var(--muted)">(${ch.unit})</span></span>${keyChannels.includes(ch.name) ? '<span class="wp-tag">key channel</span>' : ''}</div>
+                    <div class="wp-title"><span title="${ch.long}">${ch.short} <span style="font-weight:400;color:var(--muted)">(${ch.unit})</span><span class="wp-code">${ch.name}</span></span>${keyChannels.includes(ch.name) ? '<span class="wp-tag">key channel</span>' : ''}</div>
                     <div class="wp-stats">mean ${fmt(ch.mean)} · σ ${fmt(ch.std)}${fx ? ' · ' + fx : ''}</div>
                     <div class="wp-readout"></div>`;
                 panel.appendChild(waveSvg(ch));
@@ -1770,86 +1821,57 @@
 
         async function renderCounterfactual(level, label) {
             const chartBars = document.getElementById('chartBars');
-            chartBars.innerHTML = '<div class="loading">Generating counterfactual...</div>';
-
+            // the winner is the top item shown in this level's column; the target is the runner-up, or the clicked label if it is not the winner
+            const shown = [...document.querySelectorAll(`#${level}Content .prediction-item`)].map(e => e.dataset.label);
+            const winner = shown.length ? shown[0] : label;
+            const target = label === winner ? shown[1] : label;
+            if (!target) {
+                chartBars.innerHTML = '<div class="loading">Only one candidate is shown at this level, so there is no other label to flip to.</div>';
+                return;
+            }
+            chartBars.innerHTML = `<div class="loading">Searching for values under which ${target} would overtake ${winner}...</div>`;
+            const myCf = ++cfReq;
             try {
-                const response = await fetch(`${API}/counterfactual/${level}/${encodeURIComponent(label)}`);
+                const response = await fetch(`${API}/counterfactual/${level}/${encodeURIComponent(label)}?winner=${encodeURIComponent(winner)}&target=${encodeURIComponent(target)}`);
                 const data = await response.json();
-
-                if (data.error) {
-                    chartBars.innerHTML = `<div class="loading">Error: ${data.error}</div>`;
-                    return;
-                }
-
+                if (myCf !== cfReq) return;   // a newer request superseded this one
+                if (data.error) { chartBars.innerHTML = `<div class="loading">Error: ${data.error}</div>`; return; }
                 if (!data.changes || data.changes.length === 0) {
-                    chartBars.innerHTML = '<div class="loading">No counterfactuals found</div>';
+                    chartBars.innerHTML = `<div class="loading">${data.message || 'No example found'}</div>`;
                     return;
                 }
-
-                chartBars.innerHTML = '';
-
-                // Add prediction summary
-                const summaryDiv = document.createElement('div');
-                summaryDiv.style.cssText = 'background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
-                summaryDiv.innerHTML = `
-                    <div style="text-align: center;">
-                        <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Current Prediction</div>
-                        <div style="font-size: 24px; font-weight: bold; color: var(--accent);">Class ${data.current_prediction} (${(data.current_probability * 100).toFixed(1)}%)</div>
-                        <div style="font-size: 12px; color: #999; margin-top: 10px;">
-                            One example of feature values that would flip the decision to Class ${data.desired_prediction}. Found by random search; not the smallest or most physical change.
-                        </div>
+                const accent = cssVar('--accent-mid') || '#40916c', support = cssVar('--support') || '#2a78d6';
+                const bar = (p, col) => `<div class="wi-bar"><i style="width:${(p * 100).toFixed(1)}%;background:${col}"></i><span>${(p * 100).toFixed(1)} %</span></div>`;
+                const b = data.before, a = data.after;
+                const verdict = data.overtakes
+                    ? `<div class="wi-verdict ok">In this example <b>${data.target}</b> (${pct(a.target)}) ends up above <b>${data.winner}</b> (${pct(a.winner)}), so the top ${level} label would change.</div>`
+                    : `<div class="wi-verdict no">Even then <b>${data.winner}</b> (${pct(a.winner)}) stays above <b>${data.target}</b> (${pct(a.target)}): the forests share features, and this edit moves both. The top label would not change in this example.</div>`;
+                const how = data.desired_class === 1
+                    ? `${data.target}'s forest currently says no (${pct(b.target)}), so the search asked it for values that make it say yes.`
+                    : `Both forests already say yes, so the search asked ${data.winner}'s forest for values that make it say no.`;
+                let html = `<div class="wi-head">
+                    <div class="wi-title">What would it take for <b>${data.target}</b> to overtake <b>${data.winner}</b>?</div>
+                    <div class="wi-bars">
+                        <div class="h"></div><div class="h">now</div><div class="h">in this example</div>
+                        <div><b>${data.winner}</b> <span style="color:var(--muted)">(winner)</span></div>${bar(b.winner, accent)}${bar(a.winner, accent)}
+                        <div><b>${data.target}</b></div>${bar(b.target, support)}${bar(a.target, support)}
                     </div>
-                `;
-                chartBars.appendChild(summaryDiv);
-
-                // Render feature changes
-                const changesContainer = document.createElement('div');
-                changesContainer.style.cssText = 'background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);';
-
-                data.changes.forEach((change, index) => {
-                    const changeDiv = document.createElement('div');
-                    changeDiv.style.cssText = 'padding: 15px; margin-bottom: 12px; border-left: 4px solid ' + (change.change > 0 ? '#28a745' : '#dc3545') + '; background: #f8f9fa; border-radius: 5px;';
-
-                    const changeDirection = change.change > 0 ? 'increase' : 'decrease';
-                    const changeColor = change.change > 0 ? '#28a745' : '#dc3545';
-                    const changeSymbol = change.change > 0 ? '↑' : '↓';
-
-                    changeDiv.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <div style="font-weight: bold; color: #333; font-size: 15px;" title="${change.feature}">${change.display_name || change.feature}</div>
-                            <div style="font-size: 24px; font-weight: bold; color: ${changeColor};">
-                                ${changeSymbol} ${Math.abs(change.change).toFixed(4)}
-                            </div>
-                        </div>
-                        <div style="font-size: 13px; color: #666; margin-bottom: 8px;">
-                            In this example the feature is <span style="font-weight: bold; color: ${changeColor};">${changeDirection}d by ${Math.abs(change.change).toFixed(4)}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999;">
-                            <span>Current: ${change.original.toFixed(4)}</span>
-                            <span style="color: ${changeColor}; font-weight: 600;">→</span>
-                            <span>New: ${change.counterfactual.toFixed(4)}</span>
-                        </div>
-                    `;
-
-                    changesContainer.appendChild(changeDiv);
-
-                    // Animate
-                    setTimeout(() => {
-                        changeDiv.style.opacity = '0';
-                        changeDiv.style.transform = 'translateX(-10px)';
-                        setTimeout(() => {
-                            changeDiv.style.transition = 'all 0.3s ease';
-                            changeDiv.style.opacity = '1';
-                            changeDiv.style.transform = 'translateX(0)';
-                        }, 50);
-                    }, index * 80);
+                    ${verdict}
+                    <div class="wi-note">${how} The example was then scored by both forests. Found by DiCE (random search, fixed seed), best of ${data.n_candidates} candidates; not the smallest or most physical change. The tick on each bar is the 50 % threshold of that forest.</div>
+                </div>
+                <div class="wi-list"><div class="wi-list-title">Feature values that would have to change (${data.changes.length})</div>`;
+                data.changes.forEach(ch => {
+                    const up = ch.change > 0, col = up ? '#1f7a3a' : '#b4452a';
+                    html += `<div class="wi-change" style="border-left-color:${col}">
+                        <div class="nm" title="${ch.feature}">${nameHtml(ch.display_name || ch.feature, ch.feature)}</div>
+                        <div class="delta" style="color:${col}">${up ? '↑' : '↓'} ${fmtv(Math.abs(ch.change))}</div>
+                        <div class="vals">now <b>${fmtv(ch.original)}</b> → in this example <b>${fmtv(ch.counterfactual)}</b></div>
+                    </div>`;
                 });
-
-                chartBars.appendChild(changesContainer);
-
+                chartBars.innerHTML = html + '</div>';
             } catch (error) {
                 console.error('Error loading counterfactual:', error);
-                chartBars.innerHTML = '<div class="loading">Error generating counterfactual</div>';
+                chartBars.innerHTML = '<div class="loading">Error generating the what-if example</div>';
             }
         }
 

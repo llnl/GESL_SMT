@@ -56,6 +56,30 @@ def display_name(name):
 def describe_feature(name):
     return {"name": name, "display_name": display_name(name), "channel": split_feature(name)[0], "stat": split_feature(name)[1]}
 
+def feature_histogram(level, label, feature, threshold, value, bins=28):
+    """Training distribution of one feature, split into records of this label and all other records,
+    on a range that covers the 1st-99th percentiles and the split value. Used to draw each decision-path node."""
+    v = df_global[feature].values.astype(float)
+    pos = (df_global[level].values == label)
+    lo, hi = float(np.nanpercentile(v, 1)), float(np.nanpercentile(v, 99))
+    lo, hi = min(lo, threshold), max(hi, threshold)
+    if value is not None and lo - (hi - lo) <= value <= hi + (hi - lo):   # include the record unless it is far off scale
+        lo, hi = min(lo, value), max(hi, value)
+    if hi - lo < 1e-9:
+        lo, hi = lo - 1e-3, hi + 1e-3
+    pad = 0.04 * (hi - lo); lo -= pad; hi += pad
+    edges = np.linspace(lo, hi, bins + 1)
+    c_pos, _ = np.histogram(v[pos], bins=edges); c_neg, _ = np.histogram(v[~pos], bins=edges)
+    left = v <= threshold
+    def rate(mask): return float(pos[mask].mean()) if mask.any() else None
+    return {
+        "edges": [float(e) for e in edges],
+        "pos": (c_pos / max(1, c_pos.sum())).tolist(), "neg": (c_neg / max(1, c_neg.sum())).tolist(),
+        "n_pos": int(pos.sum()), "n_neg": int((~pos).sum()), "base_rate": float(pos.mean()),
+        "left_rate": rate(left), "right_rate": rate(~left), "n_left": int(left.sum()), "n_right": int((~left).sum()),
+        "value_off_scale": bool(value is not None and not (lo <= value <= hi)),
+    }
+
 app = Flask(__name__, static_folder=None)
 CORS(app)
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -706,8 +730,17 @@ def get_explanations(level, label):
                     'direction': direction,
                     'gain': step.get('avg_gain', 0),
                     'support_pct': step.get('support_pct', 0),
-                    'depth': step.get('depth', 0)
+                    'depth': step.get('depth', 0),
+                    'hist': feature_histogram(level, label, feature_name, threshold, actual_value)
+                            if feature_name in df_global.columns else None,
                 })
+        n_trees = None
+        try:
+            _m = classifier_store.load(level, label)
+            _m = _m.best_estimator_ if hasattr(_m, 'best_estimator_') else _m
+            n_trees = int(getattr(_m, 'n_estimators', 0)) or None
+        except Exception:
+            pass
 
         # Create feature-value pairs with SHAP, LIME, and MDI
         features = []
@@ -724,6 +757,7 @@ def get_explanations(level, label):
             'label': label,
             'features': features,
             'path': path_steps,
+            'n_trees': n_trees,
             'channel_order': CHANNEL_ORDER,
             'stat_order': STAT_ORDER,
             'channels': {c: CHANNELS[c] for c in CHANNEL_ORDER},
@@ -736,11 +770,87 @@ def get_explanations(level, label):
         print(f"ERROR in /explanations: {error_trace}")
         return jsonify({"error": str(e), "trace": error_trace}), 500
 
+def _forest(level, label):
+    m = classifier_store.load(level, label)
+    return m.best_estimator_ if hasattr(m, 'best_estimator_') else m
+
+def _dice_search(level, label, desired_class, total_cfs=3):
+    """Run DiCE (random method, seeded) on the yes/no forest of `label`, asking for `desired_class`.
+    Returns the forest and the DataFrame of candidate rows (may be empty)."""
+    feature_cols = actual_feature_names
+    df_local = df_global.iloc[:, 5:].copy()
+    df_local[level] = [1 if entry == label else 0 for entry in df_global[level].values]
+    model = _forest(level, label)
+    d = dice_ml.Data(dataframe=df_local, continuous_features=feature_cols, outcome_name=level)
+    m = dice_ml.Model(model=model, backend='sklearn')
+    exp = dice_ml.Dice(d, m, method='random')
+    query_df = pd.DataFrame(test_sample, columns=feature_cols)
+    dice_exp = exp.generate_counterfactuals(query_df, total_CFs=total_cfs, desired_class=desired_class, random_seed=42)
+    cfs = dice_exp.cf_examples_list[0].final_cfs_df
+    return model, query_df, (cfs if cfs is not None else pd.DataFrame(columns=feature_cols))
+
+def _changes(query_df, cf_row):
+    out = []
+    for feature in actual_feature_names:
+        o, c = float(query_df.iloc[0][feature]), float(cf_row[feature])
+        if abs(c - o) > 1e-6:
+            out.append({'feature': feature, 'display_name': display_name(feature), 'original': o, 'counterfactual': c, 'change': c - o})
+    out.sort(key=lambda x: abs(x['change']), reverse=True)
+    return out
+
 @app.route('/counterfactual/<level>/<label>', methods=['GET'])
 def get_counterfactual(level, label):
-    """Generate a counterfactual explanation for a given label"""
+    """What-if example.
+
+    With ?winner=A&target=B: find feature values under which label B would overtake A at this level.
+    The site picks the winner by comparing independent yes/no forests, so the search runs on one forest and the
+    result is then scored by both: if B's forest currently says no (<50 %), ask DiCE for values that make it say
+    yes; if both already say yes, ask DiCE for values that make A's forest say no. Both probabilities before and
+    after are returned together with whether B really ends up above A.
+
+    Without those parameters (legacy): flip the clicked label's own forest to the opposite class.
+    """
     if current_data is None or test_sample is None or classifier_store is None:
         return jsonify({"error": "No data loaded. Call /load first"}), 400
+
+    winner, target = request.args.get('winner'), request.args.get('target')
+    if target:
+        try:
+            labels = {p['label'] for p in current_data['predictions'][level]}
+            if winner not in labels or target not in labels or winner == target:
+                return jsonify({"error": f"winner and target must be two different {level} labels"}), 400
+            mw, mt = _forest(level, winner), _forest(level, target)
+            def P(model, X): return float(model.predict_proba(np.asarray(X))[0][1])
+            pw0, pt0 = P(mw, test_sample), P(mt, test_sample)
+            if pt0 < 0.5:
+                searched, desired = target, 1       # make the target's forest say yes
+            else:
+                searched, desired = winner, 0       # both say yes: make the winner's forest say no
+            print(f"What-if {level}: {winner} ({pw0:.3f}) -> {target} ({pt0:.3f}); searching {searched} for class {desired}")
+            _, query_df, cfs = _dice_search(level, searched, desired)
+            if len(cfs) == 0:
+                return jsonify({'winner': winner, 'target': target, 'searched': searched, 'desired_class': desired,
+                                'before': {'winner': pw0, 'target': pt0}, 'changes': [],
+                                'message': f'No example found that moves the decision from {winner} toward {target}.'})
+            # score every candidate with both forests; prefer one where the target really overtakes, then fewest edits
+            scored = []
+            for _, row in cfs.iterrows():
+                X1 = row[actual_feature_names].values.astype(float).reshape(1, -1)
+                pw1, pt1 = P(mw, X1), P(mt, X1)
+                ch = _changes(query_df, row)
+                scored.append((not (pt1 > pw1), len(ch), -(pt1 - pw1), pw1, pt1, ch))
+            scored.sort(key=lambda t: t[:3])
+            _, _, _, pw1, pt1, changes = scored[0]
+            return jsonify({
+                'winner': winner, 'target': target, 'searched': searched, 'desired_class': desired,
+                'before': {'winner': pw0, 'target': pt0}, 'after': {'winner': pw1, 'target': pt1},
+                'overtakes': bool(pt1 > pw1), 'n_candidates': int(len(cfs)), 'changes': changes,
+            })
+        except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
+            print(f"ERROR in /counterfactual (pair): {error_trace}")
+            return jsonify({"error": str(e), "trace": error_trace}), 500
 
     try:
         print(f"Generating counterfactuals for {level}/{label}")
