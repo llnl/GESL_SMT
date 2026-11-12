@@ -798,15 +798,67 @@ def _changes(query_df, cf_row):
     out.sort(key=lambda x: abs(x['change']), reverse=True)
     return out
 
+def _nearest_record_whatif(level, winner, target):
+    """What-if by moving toward a real record.
+
+    Among the training records labelled `target`, keep those on which the target forest outscores the winner forest
+    (and says yes), take the nearest one to this record in standardised feature space, and move all 23 features
+    together along the straight line toward it. Stop at the first point where the target overtakes the winner.
+    The end point is a real record, so every intermediate point stays inside what the data contains.
+    If no such real record exists the change is not possible with these forests, and the reply says why."""
+    fa, fb = _forest(level, winner), _forest(level, target)
+    feats = actual_feature_names
+    X = df_global[feats].values.astype(float)
+    ok = ~np.isnan(X).any(axis=1)
+    sd = np.nanstd(X[ok], axis=0); sd[~np.isfinite(sd) | (sd < 1e-9)] = 1.0
+    x0 = np.asarray(test_sample, dtype=float).reshape(-1)
+    def P(model, A): return model.predict_proba(np.atleast_2d(A))[:, 1]
+    pa0, pb0 = float(P(fa, x0)[0]), float(P(fb, x0)[0])
+    is_target = df_global[level].values == target
+    n_target = int(is_target.sum())
+    mask = is_target & ok
+    base = {'winner': winner, 'target': target, 'method': 'nearest-real-record',
+            'before': {'winner': pa0, 'target': pb0}, 'n_target_records': n_target}
+    if mask.sum() == 0:
+        return {**base, 'viable': False, 'reason': f'{target} has no usable training records.'}
+    XB = X[mask]; sig = df_global['sigid'].values[mask]
+    pa, pb = P(fa, XB), P(fb, XB)
+    strict = (pb > pa) & (pb >= 0.5); loose = pb > pa
+    stats = {'n_used': int(mask.sum()), 'target_yes_share': float((pb >= 0.5).mean()),
+             'winner_yes_share': float((pa >= 0.5).mean()), 'target_wins_share': float(loose.mean()),
+             'target_max_prob': float(pb.max()), 'winner_mean_prob_on_target': float(pa.mean())}
+    cand = strict if strict.any() else loose
+    if not cand.any():
+        return {**base, 'viable': False, 'stats': stats,
+                'reason': (f"No real {target} record outscores {winner}. {target} has {n_target} training records; "
+                           f"its own forest says yes on {stats['target_yes_share']*100:.0f} % of them, but {winner}'s forest "
+                           f"also says yes on {stats['winner_yes_share']*100:.0f} % of them and scores higher on every one. "
+                           f"Moving this record toward any real {target} record therefore keeps {winner} on top.")}
+    d = np.sqrt((((XB - x0) / sd) ** 2).sum(axis=1)); d[~cand] = np.inf
+    j = int(np.argmin(d)); xe = XB[j]
+    ts = np.linspace(0, 1, 201); path = x0[None, :] + ts[:, None] * (xe - x0)[None, :]
+    Pa, Pb = P(fa, path), P(fb, path)
+    cond = ((Pb > Pa) & (Pb >= 0.5)) if strict.any() else (Pb > Pa)
+    k = int(np.argmax(cond)); x1 = path[k]
+    changes = []
+    for i, f in enumerate(feats):
+        if abs(x1[i] - x0[i]) < 1e-9 or abs((x1[i] - x0[i]) / sd[i]) < 0.01: continue   # skip moves too small to matter
+        changes.append({'feature': f, 'display_name': display_name(f), 'original': float(x0[i]), 'counterfactual': float(x1[i]),
+                        'change': float(x1[i] - x0[i]), 'z_change': float((x1[i] - x0[i]) / sd[i]),
+                        'pct_before': float((XB[:, i] <= x0[i]).mean() * 100), 'pct_after': float((XB[:, i] <= x1[i]).mean() * 100)})
+    changes.sort(key=lambda c: abs(c['z_change']), reverse=True)
+    return {**base, 'viable': True, 'overtakes': True, 'target_says_yes': bool(Pb[k] >= 0.5), 'stats': stats,
+            'after': {'winner': float(Pa[k]), 'target': float(Pb[k])}, 'at_record': {'winner': float(Pa[-1]), 'target': float(Pb[-1])},
+            'fraction': float(ts[k]), 'nearest_sigid': int(sig[j]), 'nearest_distance': float(d[j]),
+            'n_candidates': int(cand.sum()), 'changes': changes}
+
 @app.route('/counterfactual/<level>/<label>', methods=['GET'])
 def get_counterfactual(level, label):
     """What-if example.
 
-    With ?winner=A&target=B: find feature values under which label B would overtake A at this level.
-    The site picks the winner by comparing independent yes/no forests, so the search runs on one forest and the
-    result is then scored by both: if B's forest currently says no (<50 %), ask DiCE for values that make it say
-    yes; if both already say yes, ask DiCE for values that make A's forest say no. Both probabilities before and
-    after are returned together with whether B really ends up above A.
+    With ?winner=A&target=B: feature values under which label B would overtake A at this level, found by moving
+    this record toward the nearest real B record (see _nearest_record_whatif). Replies with viable=False and a
+    reason when no real B record outscores A.
 
     Without those parameters (legacy): flip the clicked label's own forest to the opposite class.
     """
@@ -819,33 +871,7 @@ def get_counterfactual(level, label):
             labels = {p['label'] for p in current_data['predictions'][level]}
             if winner not in labels or target not in labels or winner == target:
                 return jsonify({"error": f"winner and target must be two different {level} labels"}), 400
-            mw, mt = _forest(level, winner), _forest(level, target)
-            def P(model, X): return float(model.predict_proba(np.asarray(X))[0][1])
-            pw0, pt0 = P(mw, test_sample), P(mt, test_sample)
-            if pt0 < 0.5:
-                searched, desired = target, 1       # make the target's forest say yes
-            else:
-                searched, desired = winner, 0       # both say yes: make the winner's forest say no
-            print(f"What-if {level}: {winner} ({pw0:.3f}) -> {target} ({pt0:.3f}); searching {searched} for class {desired}")
-            _, query_df, cfs = _dice_search(level, searched, desired)
-            if len(cfs) == 0:
-                return jsonify({'winner': winner, 'target': target, 'searched': searched, 'desired_class': desired,
-                                'before': {'winner': pw0, 'target': pt0}, 'changes': [],
-                                'message': f'No example found that moves the decision from {winner} toward {target}.'})
-            # score every candidate with both forests; prefer one where the target really overtakes, then fewest edits
-            scored = []
-            for _, row in cfs.iterrows():
-                X1 = row[actual_feature_names].values.astype(float).reshape(1, -1)
-                pw1, pt1 = P(mw, X1), P(mt, X1)
-                ch = _changes(query_df, row)
-                scored.append((not (pt1 > pw1), len(ch), -(pt1 - pw1), pw1, pt1, ch))
-            scored.sort(key=lambda t: t[:3])
-            _, _, _, pw1, pt1, changes = scored[0]
-            return jsonify({
-                'winner': winner, 'target': target, 'searched': searched, 'desired_class': desired,
-                'before': {'winner': pw0, 'target': pt0}, 'after': {'winner': pw1, 'target': pt1},
-                'overtakes': bool(pt1 > pw1), 'n_candidates': int(len(cfs)), 'changes': changes,
-            })
+            return jsonify(_nearest_record_whatif(level, winner, target))
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()

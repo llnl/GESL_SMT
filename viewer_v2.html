@@ -1113,6 +1113,17 @@
         .dp-link::after { content: ''; position: absolute; left: -5px; bottom: -2px; border: 4px solid transparent; border-top: 6px solid var(--accent-mid); }
         .dp-leaf { margin-left: 30px; display: inline-block; background: var(--accent-light); border: 1px solid var(--accent-mid); color: var(--accent-dark); border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 600; }
 
+        .dp-tree-wrap { position: relative; }
+        .dp-tree { width: 100%; max-width: 1100px; height: auto; display: block; margin: 0 auto; font-family: inherit; }
+        .dp-tree g.dp-node { cursor: help; }
+        .dp-tree .dp-edge-taken { stroke: var(--accent); stroke-width: 2.5; }
+        .dp-tree .dp-edge-other { stroke: #b8c2bd; stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; }
+        .dp-tip { display: none; position: absolute; width: 360px; background: white; border: 1px solid #cfd6d2; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15); padding: 8px 10px 4px; pointer-events: none; z-index: 5; }
+        .dp-tip-title { font-size: 11.5px; color: var(--muted); margin-bottom: 2px; }
+        .dp-tip svg { width: 100%; height: auto; display: block; }
+        .dp-legend .l-up::before { background: #d6e6f8; border: 1px solid #9cc0ea; } .dp-legend .l-down::before { background: #fbe0d3; border: 1px solid #f0b394; }
+        .dp-legend .l-stub::before { background: #f1f3f2; border: 1px dashed #b8c2bd; }
+
         /* what-if example */
         .wi-head { background: white; border-radius: 10px; padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 14px; }
         .wi-title { font-size: 16px; font-weight: 700; color: var(--ink); }
@@ -1133,6 +1144,11 @@
         .wi-change .nm { font-weight: 700; font-size: 14px; color: var(--ink); }
         .wi-change .delta { font-size: 18px; font-weight: 700; }
         .wi-change .vals { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+        .wi-change.more { display: none; } .wi-list.open .wi-change.more { display: grid; }
+        .wi-toggle { background: none; border: 1px solid var(--accent-mid); color: var(--accent-dark); border-radius: 14px; padding: 4px 14px; font-size: 12px; cursor: pointer; }
+        .wi-toggle:hover { background: var(--accent-light); }
+        .wi-reason { font-size: 13px; color: var(--ink); line-height: 1.5; }
+        .wi-reason ul { margin: 6px 0 0 18px; padding: 0; } .wi-reason li { margin: 2px 0; }
 
         @keyframes dots {
             0%, 20% { content: '.'; }
@@ -1560,13 +1576,13 @@
                 renderFeatureGrid(currentExplanationData);
             } else if (type === 'path') {
                 xaiExplanationTitle.textContent = 'How to read the decision path';
-                xaiExplanationText.textContent = `The random forest is ${currentExplanationData.n_trees || 'many'} trees that each ask a chain of yes/no questions about the 23 features. These are the ten questions, merged across trees, that gained the most information for this record. Each box shows where this record (green marker) sits in the training distribution of that feature: blue bars are training records of this class, grey bars all other records, the dashed line is the split value and the shaded side is the branch this record took.`;
+                xaiExplanationText.textContent = `The random forest is ${currentExplanationData.n_trees || 'many'} trees that each ask a chain of yes/no questions about the 23 features. These are the ten questions, merged across trees, that gained the most information for this record. Each box is one question: the feature, the split value, this record's value, and what share of the training records on the branch it took belong to this class. The greyed box to the side is the branch it did not take. Hover a box to see the training distribution of that feature.`;
                 explanationSubtitle.textContent = 'The ten most informative questions the trees asked about this record';
                 renderDecisionPath(currentExplanationData);
             } else if (type === 'counterfactual') {
                 xaiExplanationTitle.textContent = 'How to read the what-if example';
-                xaiExplanationText.textContent = 'The winner at each level is the label whose yes/no forest scores highest. This view takes the runner-up (or the label you clicked, if it is not the winner) and searches for feature values under which it would overtake the winner. It returns one example, not the smallest or most physical change, so read it as "the decision would change if these statistics looked like that", not as a recipe.';
-                explanationSubtitle.textContent = 'One example of feature values under which another label would win';
+                xaiExplanationText.textContent = 'The winner at each level is the label whose yes/no forest scores highest. This view takes the runner-up (or the label you clicked, if it is not the winner) and asks how far this record would have to move toward a real record of that label before it would win. All 23 features move together, so the result is a realistic record, not one statistic pushed to an extreme. When no real record of that label outscores the winner, the panel says so and why.';
+                explanationSubtitle.textContent = 'How far this record would have to move toward a real record of another label';
                 renderCounterfactual(currentLevel, currentLabel);
             }
         }
@@ -1610,35 +1626,68 @@
             return o + '</svg>';
         }
 
+        function mixWhite(hex, t) {  // blend hex colour toward white by (1-t)
+            const c = [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+            return `rgb(${c.map(v => Math.round(255 + (v - 255) * t)).join(',')})`;
+        }
+        const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;');
         function renderDecisionPath(data) {
             const chartBars = document.getElementById('chartBars');
             chartBars.innerHTML = '';
-            const pathSteps = data && data.path, label = data && data.label;
-            if (!pathSteps || pathSteps.length === 0) {
-                chartBars.innerHTML = '<div class="loading">No decision path available</div>';
-                return;
-            }
+            const steps = data && data.path, label = data && data.label;
+            if (!steps || steps.length === 0) { chartBars.innerHTML = '<div class="loading">No decision path available</div>'; return; }
             const confEl = document.querySelector(`#${currentLevel}Content .prediction-item[data-label="${label}"] .prediction-confidence`);
             const conf = confEl ? confEl.textContent : '';
-            let html = `<div class="dp-legend">
-                <span class="l-pos">training records of ${label}</span><span class="l-neg">all other training records</span>
-                <span class="l-split">split value</span><span class="l-rec">this record</span><span class="l-side">branch this record took</span></div>`;
-            pathSteps.forEach((step, i) => {
-                const h = step.hist || {}, left = step.direction === 'left';
-                const sideRate = left ? h.left_rate : h.right_rate, nSide = left ? h.n_left : h.n_right;
-                html += `<div class="dp-node">
-                    <div class="dp-num">${i + 1}</div>
-                    <div>${pathNodeSvg(step)}</div>
-                    <div class="dp-text">
-                        <div class="dp-feat" title="${step.feature_name}">${nameHtml(step.display_name || step.feature_name, step.feature_name)}</div>
-                        <div>This record: <b>${fmtv(step.actual_value)}</b>, <span class="dp-dir ${left ? 'left' : 'right'}">${left ? 'at or below' : 'above'}</span> the split value <b>${fmtv(step.threshold)}</b>.</div>
-                        ${h.n_pos != null ? `<div>Of the ${(nSide || 0).toLocaleString()} training records on this side, <b>${pct(sideRate)}</b> are ${label} (overall ${pct(h.base_rate)}).</div>` : ''}
-                        <div class="dp-meta">Asked at depth ${step.depth} by ${step.support_pct.toFixed(0)} % of the trees still deciding there · information gain ${(step.gain || 0).toFixed(3)}</div>
-                    </div></div>`;
-                if (i < pathSteps.length - 1) html += `<div class="dp-link">takes the ${left ? 'left' : 'right'} branch, next question</div>`;
+            const support = cssVar('--support') || '#2a78d6', oppose = cssVar('--oppose') || '#eb6834';
+            const W = 960, BW = 340, BH = 88, SW = 220, SH = 46, LV = 128, cx = W / 2, top = 16;
+            const H = top + steps.length * LV + 64;
+            const n = v => (v == null ? '?' : Math.round(v).toLocaleString());
+            let o = `<svg class="dp-tree" viewBox="0 0 ${W} ${H}" role="img" aria-label="decision path for ${esc(label)}">
+                <defs><marker id="dpArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>`;
+            steps.forEach((st, i) => {
+                const h = st.hist || {}, left = st.direction === 'left', y = top + i * LV, x = cx - BW / 2;
+                const takenN = left ? h.n_left : h.n_right, takenR = left ? h.left_rate : h.right_rate;
+                const otherN = left ? h.n_right : h.n_left, otherR = left ? h.right_rate : h.left_rate;
+                let fill = '#ffffff', stroke = '#cfd6d2';
+                if (takenR != null && h.base_rate) {
+                    const rel = (takenR - h.base_rate) / h.base_rate;
+                    fill = mixWhite(rel >= 0 ? support : oppose, Math.min(1, Math.abs(rel)) * 0.35);
+                    stroke = mixWhite(rel >= 0 ? support : oppose, 0.6);
+                }
+                const yb = y + BH, yn = y + LV, sx = left ? cx + 300 : cx - 300;
+                // edges: taken branch straight down, untaken branch to a stub on its own side
+                if (i < steps.length - 1 || true) o += `<line class="dp-edge-taken" x1="${cx}" y1="${yb}" x2="${cx}" y2="${yn - 3}" marker-end="url(#dpArrow)"/>`;
+                o += `<path class="dp-edge-other" d="M${cx},${yb} C${cx},${yb + 30} ${sx},${yb - 6} ${sx},${yb + 14}"/>`;
+                o += `<text x="${cx + 8}" y="${yb + 26}" font-size="12" font-weight="700" fill="var(--accent-dark)">${left ? '≤' : '>'} ${fmtv(st.threshold)}: this record</text>`;
+                o += `<text x="${left ? sx - SW / 2 : sx + SW / 2}" y="${yb + 8}" font-size="10.5" fill="var(--muted)" text-anchor="${left ? 'start' : 'end'}">${left ? '>' : '≤'} ${fmtv(st.threshold)}</text>`;
+                // stub: the branch not taken
+                o += `<g><rect x="${sx - SW / 2}" y="${yb + 14}" width="${SW}" height="${SH}" rx="7" fill="#f1f3f2" stroke="#b8c2bd" stroke-dasharray="4 3"/>
+                    <text x="${sx}" y="${yb + 31}" font-size="10" fill="var(--muted)" text-anchor="middle">not taken</text>
+                    <text x="${sx}" y="${yb + 48}" font-size="11.5" fill="var(--ink)" text-anchor="middle">${n(otherN)} records · ${pct(otherR)} ${esc(label)}</text></g>`;
+                // main box
+                o += `<g class="dp-node" data-i="${i}">
+                    <rect x="${x}" y="${y}" width="${BW}" height="${BH}" rx="9" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+                    <circle cx="${x - 18}" cy="${y + 16}" r="13" fill="var(--accent)"/><text x="${x - 18}" y="${y + 20.5}" font-size="12" font-weight="700" fill="white" text-anchor="middle">${i + 1}</text>
+                    <text x="${x + 12}" y="${y + 21}" font-size="14" font-weight="700" fill="var(--accent-dark)">${esc(st.display_name || st.feature_name)}</text>
+                    <text x="${x + BW - 10}" y="${y + 21}" font-size="9.5" fill="var(--muted)" text-anchor="end" font-family="ui-monospace, Menlo, Consolas, monospace">${esc(st.feature_name)}</text>
+                    <text x="${x + 12}" y="${y + 42}" font-size="12.5" fill="var(--ink)">this record <tspan font-weight="700">${fmtv(st.actual_value)}</tspan> · split <tspan font-weight="700">${fmtv(st.threshold)}</tspan></text>
+                    <text x="${x + 12}" y="${y + 60}" font-size="11.5" fill="var(--ink)">${n(takenN)} records on this branch · <tspan font-weight="700">${pct(takenR)}</tspan> ${esc(label)} (all records: ${pct(h.base_rate)})</text>
+                    <text x="${x + 12}" y="${y + 77}" font-size="9.5" fill="var(--muted)">depth ${st.depth} · asked by ${st.support_pct.toFixed(0)} % of the trees deciding there · information gain ${(st.gain || 0).toFixed(3)}</text>
+                </g>`;
             });
-            html += `<div class="dp-link">after all questions</div><div class="dp-leaf">Result: the ${label} forest${data.n_trees ? ` (${data.n_trees} trees)` : ''} votes ${conf || '…'} yes</div>`;
-            chartBars.innerHTML = html;
+            const yl = top + steps.length * LV;
+            o += `<rect x="${cx - 190}" y="${yl}" width="380" height="46" rx="9" fill="var(--accent-light)" stroke="var(--accent-mid)"/>
+                  <text x="${cx}" y="${yl + 28}" font-size="13" font-weight="700" fill="var(--accent-dark)" text-anchor="middle">Result: ${esc(label)} forest${data.n_trees ? ` (${data.n_trees} trees)` : ''} votes ${conf || '…'} yes</text></svg>`;
+            chartBars.innerHTML = `<div class="dp-legend">
+                <span class="l-up">more ${esc(label)} on this branch than overall</span><span class="l-down">fewer than overall</span>
+                <span class="l-stub">branch this record did not take</span><span style="color:var(--accent-dark)">hover a box for the training distribution of that feature</span></div>
+                <div class="dp-tree-wrap">${o}<div class="dp-tip"></div></div>`;
+            const wrap = chartBars.querySelector('.dp-tree-wrap'), tip = wrap.querySelector('.dp-tip');
+            wrap.querySelectorAll('g.dp-node').forEach(g => {
+                g.addEventListener('mouseenter', () => { const st = steps[+g.dataset.i]; tip.innerHTML = `<div class="dp-tip-title">Training distribution of ${esc(st.display_name)}: ${esc(label)} in blue, all other records in grey; shaded side = branch taken</div>${pathNodeSvg(st)}`; tip.style.display = 'block'; });
+                g.addEventListener('mousemove', e => { const r = wrap.getBoundingClientRect(); let px = e.clientX - r.left + 18, py = e.clientY - r.top + 14; if (px + 370 > r.width) px = e.clientX - r.left - 380; tip.style.left = px + 'px'; tip.style.top = py + 'px'; });
+                g.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+            });
         }
 
         // ---------- feature grid (SHAP per record, MDI as the model's general priorities)
@@ -1836,19 +1885,31 @@
                 const data = await response.json();
                 if (myCf !== cfReq) return;   // a newer request superseded this one
                 if (data.error) { chartBars.innerHTML = `<div class="loading">Error: ${data.error}</div>`; return; }
-                if (!data.changes || data.changes.length === 0) {
+                if (data.viable !== false && (!data.changes || data.changes.length === 0)) {
                     chartBars.innerHTML = `<div class="loading">${data.message || 'No example found'}</div>`;
                     return;
                 }
                 const accent = cssVar('--accent-mid') || '#40916c', support = cssVar('--support') || '#2a78d6';
                 const bar = (p, col) => `<div class="wi-bar"><i style="width:${(p * 100).toFixed(1)}%;background:${col}"></i><span>${(p * 100).toFixed(1)} %</span></div>`;
-                const b = data.before, a = data.after;
-                const verdict = data.overtakes
-                    ? `<div class="wi-verdict ok">In this example <b>${data.target}</b> (${pct(a.target)}) ends up above <b>${data.winner}</b> (${pct(a.winner)}), so the top ${level} label would change.</div>`
-                    : `<div class="wi-verdict no">Even then <b>${data.winner}</b> (${pct(a.winner)}) stays above <b>${data.target}</b> (${pct(a.target)}): the forests share features, and this edit moves both. The top label would not change in this example.</div>`;
-                const how = data.desired_class === 1
-                    ? `${data.target}'s forest currently says no (${pct(b.target)}), so the search asked it for values that make it say yes.`
-                    : `Both forests already say yes, so the search asked ${data.winner}'s forest for values that make it say no.`;
+                const ord = v => { const r = Math.round(v); const s = (r % 100 >= 11 && r % 100 <= 13) ? 'th' : ({1: 'st', 2: 'nd', 3: 'rd'}[r % 10] || 'th'); return r + s; };
+                const b = data.before, st = data.stats || {};
+                const small = data.n_target_records < 30 ? `<li>${data.target} has only ${data.n_target_records} training records, so its forest was fitted to very few examples; treat its scores with caution.</li>` : '';
+                if (!data.viable) {
+                    chartBars.innerHTML = `<div class="wi-head">
+                        <div class="wi-title">What would it take for <b>${data.target}</b> to overtake <b>${data.winner}</b>?</div>
+                        <div class="wi-bars"><div class="h"></div><div class="h">now</div><div class="h"></div>
+                            <div><b>${data.winner}</b> <span style="color:var(--muted)">(winner)</span></div>${bar(b.winner, accent)}<div></div>
+                            <div><b>${data.target}</b></div>${bar(b.target, support)}<div></div></div>
+                        <div class="wi-verdict no"><b>Not possible with these forests.</b> ${data.reason || ''}</div>
+                        <div class="wi-reason">Why this happens:<ul>
+                            <li>The what-if moves this record toward real ${data.target} records from the training table. It can only end at a record the ${data.target} forest scores above the ${data.winner} forest.</li>
+                            <li>${data.winner}'s forest says yes on ${((st.winner_yes_share || 0) * 100).toFixed(0)} % of the real ${data.target} records (average ${((st.winner_mean_prob_on_target || 0) * 100).toFixed(0)} %), and ${data.target}'s forest beats it on ${((st.target_wins_share || 0) * 100).toFixed(0)} % of them. Both forests see the same 23 features, and ${data.winner}'s forest has learned a region that covers ${data.target}'s records.</li>
+                            ${small}
+                            <li>So no realistic change to this record makes ${data.target} the top label here. That is a property of the trained forests, not of this record.</li></ul></div></div>`;
+                    return;
+                }
+                const a = data.after, atRec = data.at_record;
+                const verdict = `<div class="wi-verdict ok">Moving <b>${Math.round(data.fraction * 100)} %</b> of the way from this record toward the nearest real <b>${data.target}</b> record (sigId ${data.nearest_sigid}) puts ${data.target} on top: <b>${pct(a.target)}</b> vs ${data.winner} ${pct(a.winner)}${data.target_says_yes ? '' : ' (still below the 50 % line of its own forest)'}. At that real record itself the forests say ${data.target} ${pct(atRec.target)}, ${data.winner} ${pct(atRec.winner)}.</div>`;
                 let html = `<div class="wi-head">
                     <div class="wi-title">What would it take for <b>${data.target}</b> to overtake <b>${data.winner}</b>?</div>
                     <div class="wi-bars">
@@ -1857,17 +1918,18 @@
                         <div><b>${data.target}</b></div>${bar(b.target, support)}${bar(a.target, support)}
                     </div>
                     ${verdict}
-                    <div class="wi-note">${how} The example was then scored by both forests. Found by DiCE (random search, fixed seed), best of ${data.n_candidates} candidates; not the smallest or most physical change. The tick on each bar is the 50 % threshold of that forest.</div>
+                    <div class="wi-note">All 23 features move together along a straight line (in standardised feature units) toward that real record, so every intermediate point is a plausible record and no single statistic is pushed to an extreme. The percentiles below are this record's rank among the ${(st.n_used || data.n_target_records).toLocaleString()} real ${data.target} records. Deterministic: same record, same answer. The tick on each bar is the 50 % line of that forest.</div>
                 </div>
-                <div class="wi-list"><div class="wi-list-title">Feature values that would have to change (${data.changes.length})</div>`;
-                data.changes.forEach(ch => {
+                <div class="wi-list"><div class="wi-list-title">How the features move (${data.changes.length} of 23 change; the largest moves first, in standard deviations σ of the training data)</div>`;
+                data.changes.forEach((ch, i) => {
                     const up = ch.change > 0, col = up ? '#1f7a3a' : '#b4452a';
-                    html += `<div class="wi-change" style="border-left-color:${col}">
+                    html += `<div class="wi-change${i >= 8 ? ' more' : ''}" style="border-left-color:${col}">
                         <div class="nm" title="${ch.feature}">${nameHtml(ch.display_name || ch.feature, ch.feature)}</div>
-                        <div class="delta" style="color:${col}">${up ? '↑' : '↓'} ${fmtv(Math.abs(ch.change))}</div>
-                        <div class="vals">now <b>${fmtv(ch.original)}</b> → in this example <b>${fmtv(ch.counterfactual)}</b></div>
+                        <div class="delta" style="color:${col}">${up ? '↑' : '↓'} ${Math.abs(ch.z_change).toFixed(2)} σ</div>
+                        <div class="vals">now <b>${fmtv(ch.original)}</b> (${ord(ch.pct_before)} percentile of ${data.target}) → <b>${fmtv(ch.counterfactual)}</b> (${ord(ch.pct_after)} percentile)</div>
                     </div>`;
                 });
+                if (data.changes.length > 8) html += `<button class="wi-toggle" onclick="this.parentElement.classList.toggle('open'); this.textContent = this.parentElement.classList.contains('open') ? 'Show the 8 largest only' : 'Show all ${data.changes.length}'">Show all ${data.changes.length}</button>`;
                 chartBars.innerHTML = html + '</div>';
             } catch (error) {
                 console.error('Error loading counterfactual:', error);
